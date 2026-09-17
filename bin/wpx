@@ -1,0 +1,76 @@
+#!/usr/bin/env node
+/**
+ * wpx - the single CLI of the WP Plugin Lab starter.
+ * Every command lives in cli/commands/<name>.mjs and exports { run }.
+ */
+import process from 'node:process';
+import { log, c, UserError } from '../cli/lib/log.mjs';
+
+const COMMANDS = {
+	init: 'Turn the starter into your own plugin (rename slug, namespace, prefixes).',
+	doctor: 'Check that this machine is ready (Docker, ports, dependencies).',
+	compose: 'Regenerate env/docker-compose.gen.yml from wp-matrix.json.',
+	up: 'Start the selected WordPress versions (all of them by default).',
+	down: 'Stop instances; --volumes also drops their data.',
+	reset: 'Reinstall WordPress from scratch on the given targets.',
+	status: 'Show the matrix state: versions, ports, containers.',
+	matrix: 'Print the resolved matrix (--json for CI).',
+	test: 'Run tests: unit | integration | e2e | types | lint | analyse | all.',
+	dev: 'Rebuild the blocks on every change (watch mode).',
+	panel: 'Open the dashboard for the matrix and the tests (127.0.0.1:7777).',
+	skills: 'Install or update the agent skills (WordPress ones, and this repo\'s own).',
+	upgrade: 'Pull the newest lab infrastructure from the starter repository.',
+	feature: 'List, remove or restore plugin features (modules).',
+	hooks: 'Enable the versioned git hooks (pre-commit PHPCS).',
+	build: 'Build distributable zips in dist/ (--edition=free|pro|both).',
+	version: 'Set the plugin version everywhere it is written down.',
+	theme: 'List, switch or install the themes the blocks are tested on.',
+	wp: 'Run WP-CLI inside a container: wpx wp latest -- plugin list',
+	sh: 'Run a shell command inside a target container.',
+	logs: 'Tail the container logs (follows by default).',
+	open: 'Print the wp-admin link for a target.',
+};
+
+async function main() {
+	const [ name, ...rest ] = process.argv.slice( 2 );
+
+	if ( ! name || name === 'help' || name === '--help' || name === '-h' ) {
+		printHelp();
+		return 0;
+	}
+
+	if ( ! ( name in COMMANDS ) ) {
+		log.fail( `Unknown command "${ name }".` );
+		printHelp();
+		return 1;
+	}
+
+	const mod = await import( `../cli/commands/${ name }.mjs` );
+	const code = await mod.run( rest );
+	return typeof code === 'number' ? code : 0;
+}
+
+function printHelp() {
+	log.blank();
+	log.info( `${ c.bold( 'wpx' ) } - WordPress plugin development environment` );
+	log.blank();
+	log.info( '  Usage: ./bin/wpx <command> [options]' );
+	log.blank();
+	const width = Math.max( ...Object.keys( COMMANDS ).map( ( k ) => k.length ) );
+	for ( const [ key, desc ] of Object.entries( COMMANDS ) ) {
+		log.info( `  ${ c.cyan( key.padEnd( width ) ) }  ${ desc }` );
+	}
+	log.blank();
+	log.dim( '  WordPress versions live in wp-matrix.json, the plugin itself in starter.json.' );
+	log.blank();
+}
+
+main()
+	.then( ( code ) => process.exit( code ) )
+	.catch( ( err ) => {
+		if ( err instanceof UserError ) {
+			log.fail( err.message );
+			process.exit( 1 );
+		}
+		throw err;
+	} );

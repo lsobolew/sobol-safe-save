@@ -1,0 +1,25 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "my-plugin/section",
+	"version": "0.1.0",
+	"title": "Section",
+	"category": "design",
+	"icon": "layout",
+	"description": "A container that holds other blocks.",
+	"textdomain": "my-plugin",
+	"attributes": {
+		"tone": {
+			"type": "string",
+			"default": "plain"
+		}
+	},
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"align": [ "wide", "full" ]
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+}

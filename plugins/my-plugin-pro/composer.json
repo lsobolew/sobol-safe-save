@@ -1,0 +1,25 @@
+{
+	"name": "myvendor/my-plugin-pro",
+	"description": "Paid add-on for the My Plugin plugin.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=7.4"
+	},
+	"autoload": {
+		"psr-4": {
+			"MyVendor\\MyPluginPro\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"MyVendor\\MyPluginPro\\Tests\\": "tests/"
+		}
+	},
+	"config": {
+		"platform": {
+			"php": "7.4"
+		}
+	},
+	"//": "The add-on has no dev dependencies of its own - the tests reuse the free plugin vendor/ (see tests/bootstrap-*.php). One toolchain instead of two copies of the same packages."
+}

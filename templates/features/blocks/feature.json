@@ -1,0 +1,21 @@
+{
+	"name": "blocks",
+	"title": "Editor block",
+	"edition": "free",
+	"moduleClass": "MyVendor\\MyPlugin\\Modules\\Blocks\\Module",
+	"paths": [
+		"src/Modules/Blocks",
+		"blocks",
+		"types",
+		"build.mjs",
+		"tsconfig.json"
+	],
+	"tests": [],
+	"npmDependencies": [
+		"vite",
+		"typescript",
+		"sass",
+		"@wordpress/dependency-extraction-webpack-plugin"
+	],
+	"notes": "Removing this drops the whole TypeScript/Vite build. Delete plugins/<slug>/build afterwards, and the block cases in tests/e2e/free/blocks.spec.ts."
+}

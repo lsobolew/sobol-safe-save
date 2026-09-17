@@ -1,0 +1,14 @@
+{
+	"name": "pro-featured",
+	"title": "Featured items (Pro)",
+	"edition": "pro",
+	"moduleClass": "MyVendor\\MyPluginPro\\Modules\\Featured\\Module",
+	"paths": [
+		"src/Modules/Featured"
+	],
+	"tests": [
+		"tests/Integration/FeaturedModuleTest.php"
+	],
+	"npmDependencies": [],
+	"notes": "Example of a paid module that extends the free plugin purely through its public hooks."
+}

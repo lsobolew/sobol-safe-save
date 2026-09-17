@@ -1,0 +1,30 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": [ "ES2022", "DOM", "DOM.Iterable" ],
+
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+
+		// WordPress loads React itself and the build externalizes it, so the automatic runtime is
+		// the only sane choice: it emits imports from react/jsx-runtime, which maps onto the
+		// `react-jsx-runtime` script handle WordPress already registers.
+		"jsx": "react-jsx",
+		"jsxImportSource": "react",
+
+		"resolveJsonModule": true,
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"isolatedModules": true,
+
+		// Vite only transpiles; type checking is a separate step (npm run types).
+		"noEmit": true,
+		"types": []
+	},
+	"include": [ "blocks/**/*.ts", "blocks/**/*.tsx", "types/**/*.d.ts" ]
+}

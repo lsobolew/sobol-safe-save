@@ -1,0 +1,72 @@
+# Dependency updates.
+#
+# Everything is grouped and monthly, and that is a cost decision as much as a review one. Each pull
+# request runs CI, and sixteen separate bumps a month ran the pipeline sixteen times to tell us the
+# same thing. One pull request per ecosystem per month is the same information in one review and
+# one run; a security advisory still opens its own pull request immediately, whatever the schedule
+# says, which is the case where speed actually matters.
+#
+# rebase-strategy is disabled everywhere for the same reason. By default dependabot rebases every
+# open pull request whenever main moves, and each rebase is another full CI run - with a dozen
+# bumps waiting for review, one merge to main quietly bought a dozen pipelines. A stale branch
+# rebases itself on demand with a @dependabot rebase comment.
+#
+# The @wordpress/* packages stay in a group of their own, and that needs saying because they
+# generate the most churn. The block build externalises every one of them - the bundle takes
+# wp.blocks, wp.blockEditor and the rest as arguments and ships none of their code - so the
+# installed version supplies types and nothing else. Types from a newer WordPress than the plugin
+# supports describe APIs that are not there at runtime, and the compiler then approves code that
+# fatals on the oldest site the readme promises to run on. Keeping them apart from the build
+# tooling keeps that a deliberate decision about which WordPress the types should describe.
+
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /plugins/my-plugin
+    schedule:
+      interval: monthly
+    rebase-strategy: disabled
+    open-pull-requests-limit: 3
+    groups:
+      php-tooling:
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    rebase-strategy: disabled
+    open-pull-requests-limit: 3
+    groups:
+      e2e-tooling:
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /plugins/my-plugin
+    schedule:
+      interval: monthly
+    rebase-strategy: disabled
+    open-pull-requests-limit: 3
+    groups:
+      wordpress-packages:
+        patterns:
+          - "@wordpress/*"
+          - "@types/wordpress__*"
+      build-tooling:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@wordpress/*"
+          - "@types/wordpress__*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    rebase-strategy: disabled
+    groups:
+      actions:
+        patterns:
+          - "*"

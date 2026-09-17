@@ -1,0 +1,37 @@
+name: Deploy to WordPress.org
+
+# Deliberately manual: publishing to the plugin directory is irreversible, so it never rides along
+# with a tag push by accident.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (for example v1.2.0)
+        required: true
+
+jobs:
+  deploy:
+    name: SVN deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build the free edition
+        run: |
+          ./bin/wpx up latest
+          ./bin/wpx build --edition=free --verify
+
+      - name: Publish
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: my-plugin
+          BUILD_DIR: .wplab/build/my-plugin
+          ASSETS_DIR: .wordpress-org

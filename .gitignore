@@ -1,0 +1,24 @@
+# Environment artefacts
+.wplab/
+env/docker-compose.gen.yml
+env/docker-compose.override.yml
+dist/
+playwright-report/
+test-results/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+plugins/*/build/
+plugins/*/languages/*.mo
+.phpunit.result.cache
+.phpcs.cache
+
+# The agent skills in .claude/skills are committed on purpose: everyone (and every agent)
+# working on this repo should get the same WordPress instructions, and updates show up in diffs.
+
+# System
+.DS_Store
+*.log

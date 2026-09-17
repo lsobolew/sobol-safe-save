@@ -1,0 +1,6 @@
+.wp-block-my-plugin-callout {
+	// Keep the placeholder legible while the callout is still empty.
+	p:empty::before {
+		opacity: 0.6;
+	}
+}

@@ -1,0 +1,24 @@
+includes:
+	- ../my-plugin/vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+	level: 6
+	paths:
+		- my-plugin-pro.php
+		- uninstall.php
+		- src
+	bootstrapFiles:
+		- tests/phpstan-bootstrap.php
+	scanDirectories:
+		- ../my-plugin/vendor/php-stubs/wordpress-stubs
+		# The add-on consumes the free plugin classes at runtime instead of bundling them,
+		# so static analysis has to be pointed at the core source explicitly.
+		- ../my-plugin/src
+	treatPhpDocTypesAsCertain: false
+	ignoreErrors:
+		# Every module receives the Plugin instance through the same constructor, by contract.
+		# Modules that do not need it yet still keep the reference, so adding logic later never
+		# means changing a signature - PHPStan sees that as a write-only property.
+		-
+			identifier: property.onlyWritten
+			path: src/Modules/*

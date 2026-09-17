@@ -1,0 +1,157 @@
+name: CI
+
+# What runs where
+#
+# A pull request gets the quick lane: the newest WordPress, on the default theme. That is the
+# configuration that catches a broken build, a failing linter or a block that no longer renders -
+# which is what a dependency bump can plausibly break. The whole matrix (every WordPress version,
+# both editions, every theme in the sweep) costs about four times as much and runs once a week,
+# on demand, or on any pull request labelled ci:full.
+#
+# The split exists because Actions minutes on a private repository are metered and the full matrix
+# on every dependabot pull request eats them for no added signal.
+
+on:
+  push:
+    branches: [ main, trunk ]
+    paths-ignore: [ '**.md', 'docs/**', 'LICENSE' ]
+  pull_request:
+    paths-ignore: [ '**.md', 'docs/**', 'LICENSE' ]
+  schedule:
+    # Monday, early. The weekly full sweep against every supported WordPress, including nightly.
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Run every WordPress version and the whole theme sweep
+        type: boolean
+        default: true
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The quick lane. Widening this is a one-line change - ids come from wp-matrix.json.
+  QUICK_TARGETS: latest
+
+jobs:
+  # The job matrix is generated from wp-matrix.json, so adding a WordPress version to that file
+  # is all it takes to have CI cover it too.
+  matrix:
+    name: Resolve matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      targets: ${{ steps.resolve.outputs.targets }}
+      full: ${{ steps.scope.outputs.full }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - id: scope
+        name: Decide how wide this run is
+        run: |
+          full=false
+          case "${{ github.event_name }}" in
+            schedule) full=true ;;
+            workflow_dispatch) full="${{ inputs.full }}" ;;
+          esac
+          if [ "${{ contains( github.event.pull_request.labels.*.name, 'ci:full' ) }}" = true ]; then
+            full=true
+          fi
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+          echo "Full matrix: $full"
+      - id: resolve
+        run: |
+          if [ "${{ steps.scope.outputs.full }}" = true ]; then
+            echo "targets=$(./bin/wpx matrix --json)" >> "$GITHUB_OUTPUT"
+          else
+            echo "targets=$(./bin/wpx matrix --json --targets=$QUICK_TARGETS)" >> "$GITHUB_OUTPUT"
+          fi
+      - run: ./bin/wpx matrix
+
+  static:
+    name: PHPCS, PHPStan, Plugin Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Start the newest WordPress
+        run: ./bin/wpx up latest
+      - run: ./bin/wpx test lint --targets=latest
+      - run: ./bin/wpx test analyse --targets=latest
+      - run: ./bin/wpx test plugin-check --targets=latest
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: static-results
+          path: .wplab/results/
+          if-no-files-found: ignore
+
+  tests:
+    name: WP ${{ matrix.wp }} / PHP ${{ matrix.php }}
+    needs: matrix
+    runs-on: ubuntu-latest
+    # The widest job in the full sweep - the newest WordPress on three themes, both editions -
+    # settles around 40 minutes. Anything past an hour is a hang, not a slow run, and a hang that
+    # is left to the default six-hour timeout costs more minutes than the rest of the month.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install the e2e runner
+        run: npm ci
+      # build/ is generated, so a fresh checkout has block sources and nothing built from them.
+      # Without this the plugin registers no blocks and every end-to-end test that inserts one
+      # fails - which looks like a broken test suite rather than a missing step.
+      - name: Build the blocks
+        run: ./bin/wpx build --edition=both --skip-package
+      - name: Start WordPress ${{ matrix.wp }}
+        run: ./bin/wpx up ${{ matrix.id }}
+      - name: Unit and integration tests
+        run: ./bin/wpx test unit integration --targets=${{ matrix.id }} --edition=both
+      # Outside the full sweep every target stays on the default theme: three themes is three
+      # complete end-to-end runs, and the theme dimension is what the weekly sweep is for.
+      - name: End-to-end tests
+        run: >-
+          ./bin/wpx test e2e --targets=${{ matrix.id }} --edition=both
+          ${{ needs.matrix.outputs.full == 'true' && ' ' || '--no-sweep' }}
+      - name: Container logs on failure
+        if: failure()
+        run: ./bin/wpx logs ${{ matrix.id }} --no-follow --tail=200
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: results-${{ matrix.id }}
+          path: |
+            .wplab/results/
+            playwright-report/
+          if-no-files-found: ignore
+
+  package:
+    name: Build the distributables
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: ./bin/wpx up latest
+      # --verify unpacks the zip on a real site and activates it, which catches a package that is
+      # missing files long before a user downloads it.
+      - run: ./bin/wpx build --edition=both --verify
+      - uses: actions/upload-artifact@v7
+        with:
+          name: plugin-zips
+          path: dist/*.zip

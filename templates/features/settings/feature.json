@@ -1,0 +1,12 @@
+{
+	"name": "settings",
+	"title": "Settings screen",
+	"edition": "free",
+	"moduleClass": "MyVendor\\MyPlugin\\Modules\\Settings\\Module",
+	"paths": [
+		"src/Modules/Settings"
+	],
+	"tests": [],
+	"npmDependencies": [],
+	"notes": "Removing this takes away the admin UI only. Core\\Settings keeps storing the values, so other modules and the REST endpoint keep working."
+}

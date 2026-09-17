@@ -1,0 +1,12 @@
+{
+	"name": "cli",
+	"title": "WP-CLI commands",
+	"edition": "free",
+	"moduleClass": "MyVendor\\MyPlugin\\Modules\\Cli\\Module",
+	"paths": [
+		"src/Modules/Cli"
+	],
+	"tests": [],
+	"npmDependencies": [],
+	"notes": "Safe to remove: nothing else depends on it."
+}

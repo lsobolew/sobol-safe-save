@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Runs PHPCS over the staged PHP files before they become a commit.
+#
+# The check happens inside a container, because PHP lives there and not on the host. When no
+# environment is running the hook steps aside instead of blocking the commit - a pre-commit hook
+# that starts Docker would be worse than no hook at all.
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "${ROOT}"
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'plugins/*.php')
+[ -z "${STAGED}" ] && exit 0
+
+if ! docker compose -f env/docker-compose.gen.yml ps --status running --quiet 2>/dev/null | grep -q .; then
+	echo "pre-commit: no WordPress container running, skipping PHPCS."
+	echo "            Start one with ./bin/wpx up latest to get the check back."
+	exit 0
+fi
+
+echo "pre-commit: PHPCS on $(echo "${STAGED}" | wc -l | tr -d ' ') staged file(s)"
+
+FAILED=0
+for FILE in ${STAGED}; do
+	PLUGIN_DIR="${FILE#plugins/}"
+	PLUGIN="${PLUGIN_DIR%%/*}"
+	RELATIVE="${PLUGIN_DIR#*/}"
+
+	./bin/wpx sh latest -- \
+		"cd /var/www/html/wp-content/plugins/${PLUGIN} && \
+		 /var/www/html/wp-content/plugins/$(node -e "process.stdout.write(require('./starter.json').editions.free.dir)")/vendor/bin/phpcs --report=summary '${RELATIVE}'" \
+		|| FAILED=1
+done
+
+if [ "${FAILED}" != "0" ]; then
+	echo ""
+	echo "pre-commit: PHPCS found problems. Fix them, or run:"
+	echo "            ./bin/wpx sh latest -- 'cd /var/www/html/wp-content/plugins/<plugin> && vendor/bin/phpcbf'"
+	echo "            Bypass once with: git commit --no-verify"
+	exit 1
+fi
+
+exit 0

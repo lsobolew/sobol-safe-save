@@ -1,0 +1,14 @@
+{
+	"name": "content-type",
+	"title": "Custom post type and taxonomy",
+	"edition": "free",
+	"moduleClass": "MyVendor\\MyPlugin\\Modules\\ContentType\\Module",
+	"paths": [
+		"src/Modules/ContentType"
+	],
+	"tests": [
+		"tests/Integration/ContentTypeTest.php"
+	],
+	"npmDependencies": [],
+	"notes": "The REST and Blocks modules read constants from this one. They guard for its absence, but they will have nothing to list."
+}

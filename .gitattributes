@@ -1,0 +1,18 @@
+# Keep line endings sane across machines.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.zip binary
+
+# Files that never belong in a `git archive` export.
+/.github        export-ignore
+/.githooks      export-ignore
+/cli            export-ignore
+/dashboard      export-ignore
+/docs           export-ignore
+/env            export-ignore
+/templates      export-ignore
+/tests          export-ignore
+/.gitattributes export-ignore
+/.editorconfig  export-ignore

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>WP Plugin Lab</title>
+	<link rel="stylesheet" href="style.css" />
+	<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>" />
+</head>
+<body>
+	<header class="topbar">
+		<div class="brand">
+			<span class="logo">🧪</span>
+			<div>
+				<h1>WP Plugin Lab</h1>
+				<p class="sub" id="sub">WordPress version matrix</p>
+			</div>
+		</div>
+		<div class="topbar-actions">
+			<a id="mailpit" class="link" href="#" target="_blank" rel="noreferrer">Mailpit</a>
+			<button id="down-all" class="btn btn-ghost">Stop everything</button>
+		</div>
+	</header>
+
+	<main>
+		<section class="panel">
+			<h2>Environments</h2>
+			<div id="targets" class="targets"></div>
+		</section>
+
+		<section class="panel">
+			<h2>Run tests</h2>
+			<form id="run-form" class="runner">
+				<fieldset>
+					<legend>Suites</legend>
+					<div id="suites" class="chips"></div>
+				</fieldset>
+				<fieldset>
+					<legend>Versions</legend>
+					<div id="run-targets" class="chips"></div>
+				</fieldset>
+				<fieldset>
+					<legend>Edition</legend>
+					<div id="editions" class="chips"></div>
+				</fieldset>
+				<fieldset id="themes-field">
+					<legend>Themes <span class="hint">(end-to-end only; empty = whatever the matrix says)</span></legend>
+					<div id="themes" class="chips"></div>
+				</fieldset>
+				<button type="submit" class="btn btn-primary" id="run-btn">Run</button>
+			</form>
+		</section>
+
+		<section class="panel panel-log">
+			<div class="log-head">
+				<h2>Log</h2>
+				<div class="log-actions">
+					<span id="job-state" class="job-state"></span>
+					<label class="toggle"><input type="checkbox" id="autoscroll" checked /> auto-scroll</label>
+					<button id="clear-log" class="btn btn-ghost">Clear</button>
+				</div>
+			</div>
+			<pre id="log" class="log"></pre>
+		</section>
+	</main>
+
+	<script type="module" src="app.js"></script>
+</body>
+</html>

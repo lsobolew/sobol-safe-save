@@ -1,0 +1,33 @@
+# Files that never ship in the distributable package.
+#
+# The zip step also excludes *.DS_Store as a backstop, but the rule belongs here too: this file is
+# where anybody asking "what ships?" looks, and a staging copy that matches the zip is easier to
+# trust than one that differs by a rule kept somewhere else.
+.git
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+.gitkeep
+.github
+.distignore
+.editorconfig
+.gitignore
+.phpcs.cache
+.phpunit.result.cache
+node_modules
+blocks
+types
+build.mjs
+tsconfig.json
+eslint.config.mjs
+tests
+phpunit-unit.xml.dist
+phpunit-integration.xml.dist
+phpcs.xml.dist
+phpstan.neon.dist
+composer.json
+composer.lock
+package.json
+package-lock.json
+*.map

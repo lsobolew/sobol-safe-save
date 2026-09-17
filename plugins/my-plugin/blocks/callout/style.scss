@@ -1,0 +1,19 @@
+.wp-block-my-plugin-callout {
+	padding: 1rem 1.25rem;
+	border-left: 4px solid currentColor;
+	border-radius: 0 4px 4px 0;
+
+	p {
+		margin: 0;
+	}
+
+	&.is-tone-info {
+		background: rgba( 0, 90, 180, 0.08 );
+		color: #0b4a8f;
+	}
+
+	&.is-tone-warning {
+		background: rgba( 180, 90, 0, 0.1 );
+		color: #8a4b00;
+	}
+}

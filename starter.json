@@ -1,0 +1,74 @@
+{
+	"$schema": "./docs/starter.schema.json",
+	"name": "My Plugin",
+	"slug": "my-plugin",
+	"namespace": "MyVendor\\MyPlugin",
+	"constantPrefix": "MY_PLUGIN",
+	"hookPrefix": "myplugin",
+	"textDomain": "my-plugin",
+	"description": "A WordPress plugin scaffolded with WP Plugin Lab.",
+	"author": "Lukasz Sobolewski",
+	"authorUri": "https://github.com/lsobolew",
+	"pluginUri": "https://github.com/lsobolew/wp-plugin-lab",
+	"license": "GPL-2.0-or-later",
+	"requiresWp": "6.6",
+	"requiresPhp": "7.4",
+	"editions": {
+		"free": {
+			"dir": "my-plugin",
+			"enabled": true,
+			"wporg": true
+		},
+		"pro": {
+			"dir": "my-plugin-pro",
+			"enabled": true,
+			"wporg": false
+		},
+		"//": "wporg says whether an edition is destined for the WordPress.org directory. Plugin Check only runs on those: a privately distributed add-on legitimately carries an Update URI header and no readme.txt, both of which the directory's own tool reports as errors."
+	},
+	"features": {
+		"settings": {
+			"enabled": true,
+			"edition": "free"
+		},
+		"rest": {
+			"enabled": true,
+			"edition": "free"
+		},
+		"cli": {
+			"enabled": true,
+			"edition": "free"
+		},
+		"content-type": {
+			"enabled": true,
+			"edition": "free"
+		},
+		"blocks": {
+			"enabled": true,
+			"edition": "free"
+		}
+	},
+	"skills": {
+		"//": "Official WordPress agent skills (https://github.com/WordPress/agent-skills, GPL-2.0-or-later). Managed by `./bin/wpx skills`; an empty install list means every skill.",
+		"repo": "https://github.com/WordPress/agent-skills.git",
+		"ref": "trunk",
+		"targets": [
+			"claude"
+		],
+		"install": [
+			"wordpress-router",
+			"wp-plugin-development",
+			"wp-plugin-directory-guidelines",
+			"wp-block-development",
+			"wp-rest-api",
+			"wp-wpcli-and-ops",
+			"wp-phpstan",
+			"wp-performance"
+		]
+	},
+	"lab": {
+		"//": "Where `./bin/wpx upgrade` pulls the lab infrastructure from. Point it at your own starter repository.",
+		"repo": "https://github.com/lsobolew/wp-plugin-lab.git",
+		"ref": ""
+	}
+}
