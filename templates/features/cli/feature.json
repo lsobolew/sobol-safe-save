@@ -2,7 +2,7 @@
 	"name": "cli",
 	"title": "WP-CLI commands",
 	"edition": "free",
-	"moduleClass": "MyVendor\\MyPlugin\\Modules\\Cli\\Module",
+	"moduleClass": "Sobolewski\\SobolSafeSave\\Modules\\Cli\\Module",
 	"paths": [
 		"src/Modules/Cli"
 	],

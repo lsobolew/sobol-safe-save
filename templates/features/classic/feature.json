@@ -1,0 +1,16 @@
+{
+	"name": "classic",
+	"title": "Classic editor support",
+	"edition": "free",
+	"moduleClass": "Sobolewski\\SobolSafeSave\\Modules\\Classic\\Module",
+	"paths": [
+		"src/Core/Explainer.php",
+		"src/Modules/Classic",
+		"scripts/classic"
+	],
+	"tests": [
+		"tests/Integration/ClassicNoticeTest.php"
+	],
+	"npmDependencies": [],
+	"notes": "Archived rather than deleted: the warning and the after-the-fact notice both work and are covered by integration tests, but the browser half has no end-to-end test, because forcing the classic editor needs the Classic Editor plugin installed in the test environment. Restoring it means restoring that coverage first - see templates/features/classic/README.md. Explainer travels with it: it is the PHP-side wording of a change record, and the block editor does its own wording in TypeScript."
+}

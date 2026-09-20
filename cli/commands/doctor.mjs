@@ -107,7 +107,11 @@ export async function run() {
 	}
 
 	// Agent skills are part of the setup: an outdated pack quietly teaches outdated WordPress.
-	const skillsLock = path.join( paths.root, '.claude', 'wplab-skills.lock.json' );
+	const canonicalSkillsLock = path.join( paths.root, '.agents', 'wplab-skills.lock.json' );
+	const legacySkillsLock = path.join( paths.root, '.claude', 'wplab-skills.lock.json' );
+	const skillsLock = fs.existsSync( canonicalSkillsLock )
+		? canonicalSkillsLock
+		: legacySkillsLock;
 
 	if ( fs.existsSync( skillsLock ) ) {
 		const lock = JSON.parse( fs.readFileSync( skillsLock, 'utf8' ) );

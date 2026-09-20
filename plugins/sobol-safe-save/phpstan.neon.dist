@@ -1,0 +1,21 @@
+includes:
+	- vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+	level: 6
+	paths:
+		- sobol-safe-save.php
+		- uninstall.php
+		- src
+	bootstrapFiles:
+		- tests/phpstan-bootstrap.php
+	scanDirectories:
+		- vendor/php-stubs/wordpress-stubs
+	treatPhpDocTypesAsCertain: false
+	ignoreErrors:
+		# Every module receives the Plugin instance through the same constructor, by contract.
+		# Modules that do not need it yet still keep the reference, so adding logic later never
+		# means changing a signature - PHPStan sees that as a write-only property.
+		-
+			identifier: property.onlyWritten
+			path: src/Modules/*

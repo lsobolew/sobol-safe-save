@@ -33,8 +33,10 @@ jobs:
             Automated update of the official WordPress agent skills
             (https://github.com/WordPress/agent-skills).
 
-            Review the diff under `.claude/skills/` before merging.
+            Review the canonical `.agents/skills/` diff and the generated Claude compatibility
+            copy before merging.
           add-paths: |
+            .agents/skills/**
+            .agents/wplab-skills.lock.json
             .claude/skills/**
-            .claude/wplab-skills.lock.json
           delete-branch: true

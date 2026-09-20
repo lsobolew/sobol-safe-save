@@ -182,6 +182,9 @@ export function themesForTarget( matrix, targetId, override ) {
 						.join( ', ' ) }`
 				);
 			}
+			if ( ! themeRunsOn( found, matrix.targets.find( ( target ) => target.id === targetId ) ) ) {
+				throw new UserError( `Theme ${ found.slug } requires WordPress ${ found.requiresWp } and cannot run on ${ targetId }.` );
+			}
 
 			return found;
 		} );

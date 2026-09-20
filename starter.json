@@ -1,27 +1,27 @@
 {
 	"$schema": "./docs/starter.schema.json",
-	"name": "My Plugin",
-	"slug": "my-plugin",
-	"namespace": "MyVendor\\MyPlugin",
-	"constantPrefix": "MY_PLUGIN",
-	"hookPrefix": "myplugin",
-	"textDomain": "my-plugin",
-	"description": "A WordPress plugin scaffolded with WP Plugin Lab.",
+	"name": "Sobol Safe Save",
+	"slug": "sobol-safe-save",
+	"namespace": "Sobolewski\\SobolSafeSave",
+	"constantPrefix": "SOBOL_SAFE_SAVE",
+	"hookPrefix": "sobol_safe_save",
+	"textDomain": "sobol-safe-save",
+	"description": "Warns you before saving when WordPress will strip or change part of your content, and shows exactly which blocks are affected.",
 	"author": "Lukasz Sobolewski",
 	"authorUri": "https://github.com/lsobolew",
-	"pluginUri": "https://github.com/lsobolew/wp-plugin-lab",
+	"pluginUri": "https://github.com/lsobolew/sobol-safe-save",
 	"license": "GPL-2.0-or-later",
-	"requiresWp": "6.6",
+	"requiresWp": "6.8",
 	"requiresPhp": "7.4",
 	"editions": {
 		"free": {
-			"dir": "my-plugin",
+			"dir": "sobol-safe-save",
 			"enabled": true,
 			"wporg": true
 		},
 		"pro": {
-			"dir": "my-plugin-pro",
-			"enabled": true,
+			"dir": "sobol-safe-save-pro",
+			"enabled": false,
 			"wporg": false
 		},
 		"//": "wporg says whether an edition is destined for the WordPress.org directory. Plugin Check only runs on those: a privately distributed add-on legitimately carries an Update URI header and no readme.txt, both of which the directory's own tool reports as errors."
@@ -31,20 +31,16 @@
 			"enabled": true,
 			"edition": "free"
 		},
-		"rest": {
-			"enabled": true,
-			"edition": "free"
-		},
 		"cli": {
-			"enabled": true,
+			"enabled": false,
 			"edition": "free"
 		},
 		"content-type": {
-			"enabled": true,
+			"enabled": false,
 			"edition": "free"
 		},
-		"blocks": {
-			"enabled": true,
+		"classic": {
+			"enabled": false,
 			"edition": "free"
 		}
 	},

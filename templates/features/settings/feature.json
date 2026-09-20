@@ -2,7 +2,7 @@
 	"name": "settings",
 	"title": "Settings screen",
 	"edition": "free",
-	"moduleClass": "MyVendor\\MyPlugin\\Modules\\Settings\\Module",
+	"moduleClass": "Sobolewski\\SobolSafeSave\\Modules\\Settings\\Module",
 	"paths": [
 		"src/Modules/Settings"
 	],

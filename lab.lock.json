@@ -1,0 +1,18 @@
+{
+	"repo": "https://github.com/lsobolew/wp-plugin-lab.git",
+	"ref": "main",
+	"commit": "6eb2387cb4a2314d90cfd794a93ad3568e4c6485",
+	"committedAt": "2026-09-19T17:44:15+02:00",
+	"upgradedAt": "2026-09-20T04:27:06.316Z",
+	"paths": [
+		"bin",
+		"cli",
+		"env",
+		"dashboard",
+		".githooks",
+		"docs",
+		".github/workflows/ci.yml",
+		".github/workflows/release.yml",
+		".github/workflows/update-skills.yml"
+	]
+}

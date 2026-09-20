@@ -2,7 +2,7 @@
 	"name": "pro-featured",
 	"title": "Featured items (Pro)",
 	"edition": "pro",
-	"moduleClass": "MyVendor\\MyPluginPro\\Modules\\Featured\\Module",
+	"moduleClass": "Sobolewski\\SobolSafeSavePro\\Modules\\Featured\\Module",
 	"paths": [
 		"src/Modules/Featured"
 	],

@@ -9,7 +9,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { paths, ensureDir } from '../cli/lib/paths.mjs';
-import { resolveMatrix, selectTargets, themesForTarget } from '../cli/lib/matrix.mjs';
+import { resolveMatrix, selectTargets } from '../cli/lib/matrix.mjs';
 import {
 	compose,
 	serviceStatus,
@@ -22,13 +22,14 @@ import { waitForHealthy } from '../cli/lib/health.mjs';
 import {
 	runSuite,
 	resolveEditions,
-	packagesForEdition,
-	allPackages,
 	availableEditions,
 } from '../cli/lib/runner.mjs';
 import { runE2e } from '../cli/lib/e2e.mjs';
 import { allSummaries } from '../cli/lib/junit.mjs';
 import { run as runCommand } from '../cli/commands/reset.mjs';
+
+import { createTestPlan } from '../cli/lib/test-plan.mjs';
+import { createJobQueue } from './job-queue.mjs';
 
 const PUBLIC_DIR = path.join( paths.dashboard, 'public' );
 const MIME = {
@@ -46,7 +47,7 @@ const MIME = {
 const clients = new Set();
 const jobs = [];
 let activeJob = null;
-let queue = Promise.resolve();
+const queue = createJobQueue();
 
 function broadcast( event, data ) {
 	const payload = `event: ${ event }\ndata: ${ JSON.stringify( data ) }\n\n`;
@@ -72,7 +73,7 @@ function enqueue( title, worker ) {
 	jobs.push( job );
 	broadcast( 'job', job );
 
-	queue = queue.then( async () => {
+	queue( async () => {
 		activeJob = job;
 		job.state = 'running';
 		job.startedAt = Date.now();
@@ -90,6 +91,13 @@ function enqueue( title, worker ) {
 		activeJob = null;
 		broadcast( 'job', job );
 		broadcast( 'state', await buildState() );
+	} ).catch( ( err ) => {
+		activeJob = null;
+		job.state = 'done';
+		job.ok = false;
+		job.finishedAt = Date.now();
+		log( job.id, `\nERROR: ${ err.message }\n` );
+		broadcast( 'job', job );
 	} );
 
 	return job;
@@ -204,47 +212,19 @@ async function handleApi( req, res, url ) {
 	if ( url.pathname === '/api/run' ) {
 		const targets = selectTargets( matrix, body.targets || [] );
 		const editions = resolveEditions( body.edition || 'both' );
-		const suites = ( body.suites || [ 'unit' ] ).filter( Boolean );
+		const suites = body.suites || [ 'unit' ];
+		const plan = createTestPlan( { matrix, targets, editions, suites, themes: body.themes || [] } );
 
 		const job = enqueue(
 			`${ suites.join( '+' ) } | ${ targets.map( ( t ) => t.id ).join( ', ' ) }`,
 			async ( emit ) => {
 				let ok = true;
 
-				for ( const suite of suites ) {
-					const editionless = [ 'unit', 'lint', 'analyse' ].includes( suite );
-					const combos = editionless
-						? allPackages().map( ( pkg ) => ( { edition: null, pkg } ) )
-						: editions.flatMap( ( edition ) =>
-								suite === 'e2e'
-									? [ { edition, pkg: null } ]
-									: packagesForEdition( edition ).map( ( pkg ) => ( { edition, pkg } ) )
-						  );
-
-					for ( const target of targets ) {
-						const themes =
-							suite === 'e2e'
-								? themesForTarget( matrix, target.id, body.themes || [] )
-								: [ null ];
-
-						for ( const { edition, pkg } of combos ) {
-							for ( const theme of themes ) {
-								const result =
-									suite === 'e2e'
-										? await runE2e( { matrix, target, edition, theme, onLog: emit } )
-										: await runSuite( {
-												matrix,
-												target,
-												suite,
-												edition,
-												pkg,
-												onLog: emit,
-										  } );
-								ok = ok && result.ok;
-								broadcast( 'state', await buildState() );
-							}
-						}
-					}
+				for ( const entry of plan ) {
+					const options = { matrix, ...entry, onLog: emit };
+					const result = await ( entry.suite === 'e2e' ? runE2e( options ) : runSuite( options ) );
+					ok = ok && result.ok;
+					broadcast( 'state', await buildState() );
 				}
 
 				return ok;

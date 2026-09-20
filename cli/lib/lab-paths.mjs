@@ -37,7 +37,8 @@ export const LAB_EXCLUDES = [
  * starter.json, wp-matrix.json  your configuration
  * .github/dependabot.yml        carries the plugin directory, rewritten by `wpx init`
  * .github/workflows/deploy-wporg.yml  carries the plugin slug, rewritten by `wpx init`
- * CLAUDE.md, README.md          yours to adapt once the starter becomes your plugin
+ * AGENTS.md, CLAUDE.md, README.md
+ *                               yours to adapt once the starter becomes your plugin
  */
 export const NOT_LAB_PATHS = [
 	'plugins',
@@ -48,5 +49,6 @@ export const NOT_LAB_PATHS = [
 	'.github/dependabot.yml',
 	'.github/workflows/deploy-wporg.yml',
 	'CLAUDE.md',
+	'AGENTS.md',
 	'README.md',
 ];

@@ -34,6 +34,14 @@ undo the rename.
 `env/docker-compose.override.yml` exists precisely so you can bend the environment without forking
 it. Neither is touched.
 
+Lab regression tests live in `cli/tests/` and are upgraded with the tooling. CI runs them directly
+with Node, without depending on scripts in your project-owned `package.json`. Type checks use
+`wpx test types`, which reads the enabled plugin directories from `starter.json`.
+
+Run `./bin/wpx skills update` separately to update agent skills. Required resource dependencies
+(such as `wp-project-triage`) are included automatically even if an older `skills.install` list
+does not name them. Your configured selection is not rewritten.
+
 ## Why it insists on a clean tree
 
 `wpx upgrade` refuses to run with uncommitted changes. That is the whole safety mechanism: with a

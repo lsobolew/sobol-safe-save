@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { paths, ensureDir } from './paths.mjs';
 import { pluginDirs, pluginsForEdition, starter } from './config.mjs';
-import { compose, serviceStatus, syncCompose, withProfiles } from './docker.mjs';
+import { compose, composeCapture, serviceStatus, syncCompose, withProfiles } from './docker.mjs';
+import { pluginCheckPassed } from './plugin-check.mjs';
 import { run as hostRun } from './proc.mjs';
 import { waitForHealthy } from './health.mjs';
 import { resultFile, writeSyntheticResult, readSummary } from './junit.mjs';
@@ -25,7 +26,10 @@ export function resolveEditions( flag ) {
 	const available = availableEditions();
 	if ( ! flag || flag === 'both' || flag === 'all' ) return available;
 	const wanted = String( flag ).split( ',' ).map( ( s ) => s.trim() );
-	return wanted.filter( ( e ) => available.includes( e ) );
+	if ( wanted.some( ( edition ) => ! available.includes( edition ) ) ) {
+		throw new Error( `Unknown edition. Available: ${ available.join( ', ' ) }` );
+	}
+	return [ ...new Set( wanted ) ];
 }
 
 /** Starts a target when it is not running yet. */
@@ -81,21 +85,9 @@ export async function applyEdition( target, edition, { onLog } = {} ) {
  * add-on active (to catch regressions) and the add-on's own tests. The key becomes part of the
  * result file name, so the dashboard shows exactly which suite failed.
  */
-export function packagesForEdition( edition ) {
-	const s = starter();
-	const freeDir = s.editions?.free?.dir || 'my-plugin';
-	const proDir = s.editions?.pro?.dir || 'my-plugin-pro';
-
-	const wporg = ( name ) => s.editions?.[ name ]?.wporg !== false;
-
-	if ( edition !== 'pro' ) {
-		return [ { dir: freeDir, key: 'free', vendorFrom: freeDir, wporg: wporg( 'free' ) } ];
-	}
-
-	return [
-		{ dir: freeDir, key: 'pro', vendorFrom: freeDir, wporg: wporg( 'free' ) },
-		{ dir: proDir, key: 'proaddon', vendorFrom: freeDir, wporg: wporg( 'pro' ) },
-	];
+export function packagesForEdition( edition, packages = allPackages() ) {
+	return packages.filter( ( pkg ) => pkg.key === 'free' || edition === 'pro' )
+		.map( ( pkg ) => ( { ...pkg, key: edition === 'pro' && pkg.key === 'free' ? 'pro' : pkg.key } ) );
 }
 
 /**
@@ -201,7 +193,7 @@ export async function runSuite( {
 		if ( ! ready ) return { ok: false, file: null };
 
 		if ( suite === 'integration' ) {
-			await applyEdition( target, edition, { onLog: emit } );
+			if ( ! await applyEdition( target, edition, { onLog: emit } ) ) return { ok: false, file: null };
 			const install = await compose(
 				[ 'exec', '-T', target.service, 'bash', '-lc', '/usr/local/wplab/install-test-suite.sh' ],
 				{ onData: emit }
@@ -304,6 +296,7 @@ export async function runSuite( {
 		const stagingPath = containerPluginPath( staging );
 
 		const script = [
+			'set -e',
 			`rm -rf ${ stagingPath }`,
 			`mkdir -p ${ stagingPath }`,
 			// vendor/ and node_modules/ hold development dependencies here; a release either ships a
@@ -313,40 +306,29 @@ export async function runSuite( {
 				`--exclude='node_modules' ${ sourcePath }/ ${ stagingPath }/`,
 			'( wp --allow-root plugin is-installed plugin-check' +
 				' || wp --allow-root plugin install plugin-check --activate )',
-			'wp --allow-root plugin activate plugin-check || true',
+			'wp --allow-root plugin activate plugin-check',
 			// --slug keeps the checks that derive from the plugin slug - the text domain above all -
 			// pointed at the real name rather than at this throwaway directory.
-			`wp --allow-root plugin check ${ staging } --slug=${ pkg.dir } --format=table --severity=5 || true`,
-			// `wp plugin check` prints its findings and still exits 0, so the run has to decide for
-			// itself. Asking again with warnings suppressed leaves either a success line or the
-			// errors, which is what turns the report into a pass or a fail instead of something
-			// that scrolls past.
-			`ERRORS="$(wp --allow-root plugin check ${ staging } --slug=${ pkg.dir } ` +
-				`--severity=5 --ignore-warnings 2>/dev/null)"`,
-			`rm -rf ${ stagingPath }`,
-			'if echo "$ERRORS" | grep -q "No errors found"; then echo "Plugin Check: no errors."; ' +
-				'elif echo "$ERRORS" | grep -q "ERROR"; then ' +
-				'echo "Plugin Check reported errors (shown above)."; exit 1; ' +
-				'else echo "Plugin Check: no errors."; fi',
 		].join( '; ' );
-
 		let output = '';
-		const { code } = await compose( [ 'exec', '-T', target.service, 'bash', '-lc', script ], {
-			onData: ( chunk ) => {
-				output += chunk;
-				emit( chunk );
-			},
-		} );
-
-		const file = writeSyntheticResult( {
-			target: target.id,
-			edition: pkg.key,
-			suite,
-			passed: code === 0,
-			output,
-		} );
-
-		return { ok: code === 0, file };
+		let passed = false;
+		try {
+			const prepared = await compose( [ 'exec', '-T', target.service, 'bash', '-lc', script ], {
+				onData: ( chunk ) => { output += chunk; emit( chunk ); },
+			} );
+			if ( prepared.code === 0 ) {
+				const checked = await composeCapture( [ 'exec', '-T', target.service, 'wp', '--allow-root',
+					'plugin', 'check', staging, `--slug=${ pkg.dir }`, '--format=strict-json', '--severity=5' ] );
+				output += checked.stdout + checked.stderr;
+				emit( checked.stdout + checked.stderr );
+				passed = pluginCheckPassed( checked );
+			}
+		} finally {
+			const cleanup = await compose( [ 'exec', '-T', target.service, 'rm', '-rf', stagingPath ], { onData: emit } );
+			if ( cleanup.code !== 0 ) passed = false;
+		}
+		const file = writeSyntheticResult( { target: target.id, edition: pkg.key, suite, passed, output } );
+		return { ok: passed, file };
 	}
 
 	if ( suite === 'lint' || suite === 'analyse' ) {

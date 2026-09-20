@@ -1,5 +1,9 @@
 # The version matrix
 
+`starter.json` and `wp-matrix.json` are validated against the bundled schemas before use.
+The `min` target must match `starter.json`'s `requiresWp` and `requiresPhp`. Target IDs and all
+service ports must be unique; configured editions and theme sweep references must exist.
+
 `wp-matrix.json` is the single place that decides which WordPress versions you support. Everything
 downstream follows it: the containers, the test runs, the dashboard cards and the CI job list.
 
@@ -9,7 +13,7 @@ downstream follows it: the containers, the test runs, the dashboard cards and th
     { "id": "latest",  "wp": "latest",   "php": "8.4", "port": 8091 },
     { "id": "prev",    "wp": "latest-1", "php": "8.3", "port": 8092 },
     { "id": "lts",     "wp": "6.9",      "php": "8.2", "port": 8093 },
-    { "id": "min",     "wp": "6.8",      "php": "7.4", "port": 8094 },
+    { "id": "min",     "wp": "6.6",      "php": "7.4", "port": 8094 },
     { "id": "nightly", "wp": "nightly",  "php": "8.4", "port": 8095, "multisite": true }
   ],
   "editions": [ "free", "pro" ],

@@ -67,6 +67,29 @@ const slugToTitle = ( slug ) =>
 		.map( ( part ) => part.charAt( 0 ).toUpperCase() + part.slice( 1 ) )
 		.join( ' ' );
 
+/**
+ * Words that describe what a plugin does rather than whose it is. A slug built only from these
+ * says nothing another plugin could not say, and WordPress.org pends submissions over exactly
+ * that - "Image Icons" was pended as "a generic descriptive name [that] does not begin with a
+ * distinctive brand or identifier".
+ *
+ * The list is a heuristic and deliberately short: it is here to prompt a decision, not to be an
+ * authority on English. Missing a word costs nothing, because the reviewer is the real check.
+ */
+const GENERIC_WORDS = new Set( [
+	'accordion', 'admin', 'advanced', 'ajax', 'api', 'audio', 'auto', 'backup', 'better', 'block',
+	'blocks', 'button', 'buttons', 'cache', 'card', 'cards', 'carousel', 'cart', 'chart', 'charts',
+	'checkout', 'color', 'colors', 'colour', 'colours', 'comment', 'comments', 'contact', 'content',
+	'custom', 'dashboard', 'easy', 'editor', 'email', 'export', 'extra', 'fast', 'field', 'fields',
+	'filter', 'font', 'fonts', 'form', 'forms', 'gallery', 'grid', 'helper', 'icon', 'icons',
+	'image', 'images', 'import', 'light', 'lite', 'link', 'links', 'list', 'login', 'mail',
+	'manager', 'media', 'menu', 'menus', 'meta', 'modal', 'modern', 'page', 'pages', 'popup',
+	'post', 'posts', 'price', 'pricing', 'product', 'products', 'quick', 'redirect', 'rest',
+	'search', 'security', 'seo', 'share', 'shop', 'simple', 'sitemap', 'slider', 'smart', 'social',
+	'sort', 'store', 'style', 'styles', 'super', 'tab', 'table', 'tables', 'tabs', 'tags', 'theme',
+	'tools', 'toolkit', 'ultimate', 'user', 'users', 'video', 'widget', 'widgets',
+] );
+
 function validate( answers ) {
 	if ( ! /^[a-z][a-z0-9-]*$/.test( answers.slug ) ) {
 		throw new UserError(
@@ -88,6 +111,25 @@ function validate( answers ) {
 					'names or slugs. Fine for a private plugin; rename before submitting one.'
 			);
 		}
+	}
+
+	// A slug made only of descriptive words is the single most common reason a first submission
+	// comes back pended, and the slug is permanent once a plugin is approved - the display name
+	// can be changed afterwards, the permalink never can. So this is worth catching on the day the
+	// plugin is created, not on the day it is submitted.
+	const words = answers.slug.split( '-' ).filter( Boolean );
+
+	if ( words.every( ( word ) => GENERIC_WORDS.has( word ) ) ) {
+		log.warn(
+			`Every word in "${ answers.slug }" describes what the plugin does and none of them ` +
+				'says whose it is. WordPress.org pends submissions over that, and the slug cannot ' +
+				'be changed after approval.'
+		);
+		log.dim(
+			`   Put a distinctive identifier first: <yours>-${ answers.slug }. A brand, a coined ` +
+				'word or your own handle all work; another generic word ("advanced", "easy") ' +
+				'does not.'
+		);
 	}
 
 	if ( ! /^[A-Za-z][A-Za-z0-9]*\\[A-Za-z][A-Za-z0-9]*$/.test( answers.namespace ) ) {

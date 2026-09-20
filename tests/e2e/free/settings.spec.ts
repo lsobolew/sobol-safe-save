@@ -4,56 +4,87 @@
 import { test, expect } from '@wordpress/e2e-test-utils-playwright';
 
 const SAVE_BUTTON = /Save Changes|Save/;
+const PAGE = 'page=sobol-safe-save';
+
+/**
+ * A checkbox, by name.
+ *
+ * The type matters: each checkbox is preceded by a hidden input of the same name carrying 0, so
+ * that unticking one actually submits something. Selecting on the name alone finds both.
+ */
+const checkbox = ( key: string ) =>
+	`input[type="checkbox"][name="sobol_safe_save_settings[${ key }]"]`;
+
+/** One of the post type checkboxes, which post as a list rather than a single value. */
+const postType = ( slug: string ) =>
+	`input[name="sobol_safe_save_settings[post_types][]"][value="${ slug }"]`;
 
 test.describe( 'Settings screen', () => {
 	test( 'is reachable from the Settings menu', async ( { admin, page } ) => {
-		await admin.visitAdminPage( 'options-general.php', 'page=my-plugin' );
+		await admin.visitAdminPage( 'options-general.php', PAGE );
 
 		await expect(
-			page.getByRole( 'heading', { name: 'My Plugin', level: 1 } )
+			page.getByRole( 'heading', { name: 'Sobol Safe Save', level: 1 } )
 		).toBeVisible();
 	} );
 
 	test( 'saves changed values', async ( { admin, page } ) => {
-		const label = `label-${ Date.now() }`;
+		await admin.visitAdminPage( 'options-general.php', PAGE );
 
-		await admin.visitAdminPage( 'options-general.php', 'page=my-plugin' );
-
-		await page.fill( 'input[name="my_plugin_settings[api_label]"]', label );
-		await page.fill( 'input[name="my_plugin_settings[items_per_page]"]', '7' );
+		await page.uncheck( checkbox( 'check_excerpt' ) );
+		await page.fill( 'input[name="sobol_safe_save_settings[debounce_ms]"]', '1500' );
 		await page.getByRole( 'button', { name: SAVE_BUTTON } ).click();
 
-		// After saving, WordPress returns to the settings page with a confirmation notice.
 		await expect( page.locator( '#setting-error-settings_updated' ) ).toBeVisible();
 
-		await admin.visitAdminPage( 'options-general.php', 'page=my-plugin' );
+		await admin.visitAdminPage( 'options-general.php', PAGE );
 
+		await expect( page.locator( checkbox( 'check_excerpt' ) ) ).not.toBeChecked();
 		await expect(
-			page.locator( 'input[name="my_plugin_settings[api_label]"]' )
-		).toHaveValue( label );
-		await expect(
-			page.locator( 'input[name="my_plugin_settings[items_per_page]"]' )
-		).toHaveValue( '7' );
+			page.locator( 'input[name="sobol_safe_save_settings[debounce_ms]"]' )
+		).toHaveValue( '1500' );
+
+		// Put it back, so the run order of the rest of the suite cannot matter.
+		await page.check( checkbox( 'check_excerpt' ) );
+		await page.fill( 'input[name="sobol_safe_save_settings[debounce_ms]"]', '800' );
+		await page.getByRole( 'button', { name: SAVE_BUTTON } ).click();
 	} );
 
-	test( 'rejects out-of-range values', async ( { admin, page } ) => {
-		await admin.visitAdminPage( 'options-general.php', 'page=my-plugin' );
+	test( 'clamps a delay the form would never send', async ( { admin, page } ) => {
+		await admin.visitAdminPage( 'options-general.php', PAGE );
 
-		// The number field has min=1, so the browser would never submit 0. Send it anyway, with
-		// the HTML validation removed, to prove the server-side sanitization does the work.
+		// The field has min=200, so a browser would refuse to submit 0. Strip the validation and
+		// send it anyway: the guarantee being tested is the server's, not the browser's.
 		await page.evaluate( () => {
-			const input = document.querySelector(
-				'input[name="my_plugin_settings[items_per_page]"]'
+			const input = document.querySelector< HTMLInputElement >(
+				'input[name="sobol_safe_save_settings[debounce_ms]"]'
 			);
-			input.removeAttribute( 'min' );
-			input.value = '0';
-		} );
-		await page.getByRole( 'button', { name: SAVE_BUTTON } ).click();
 
-		await admin.visitAdminPage( 'options-general.php', 'page=my-plugin' );
+			if ( input ) {
+				input.removeAttribute( 'min' );
+				input.value = '0';
+			}
+		} );
+
+		await page.getByRole( 'button', { name: SAVE_BUTTON } ).click();
+		await admin.visitAdminPage( 'options-general.php', PAGE );
 
 		await expect(
-			page.locator( 'input[name="my_plugin_settings[items_per_page]"]' )
-		).toHaveValue( '1' );
+			page.locator( 'input[name="sobol_safe_save_settings[debounce_ms]"]' )
+		).toHaveValue( '200' );
+
+		await page.fill( 'input[name="sobol_safe_save_settings[debounce_ms]"]', '800' );
+		await page.getByRole( 'button', { name: SAVE_BUTTON } ).click();
+	} );
+
+	test( 'lists the post types that can be checked', async ( { admin, page } ) => {
+		await admin.visitAdminPage( 'options-general.php', PAGE );
+
+		await expect(
+			page.locator( postType( 'post' ) )
+		).toBeVisible();
+		await expect(
+			page.locator( postType( 'page' ) )
+		).toBeVisible();
 	} );
 } );

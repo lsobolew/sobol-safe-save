@@ -2,7 +2,7 @@
 	"name": "content-type",
 	"title": "Custom post type and taxonomy",
 	"edition": "free",
-	"moduleClass": "MyVendor\\MyPlugin\\Modules\\ContentType\\Module",
+	"moduleClass": "Sobolewski\\SobolSafeSave\\Modules\\ContentType\\Module",
 	"paths": [
 		"src/Modules/ContentType"
 	],

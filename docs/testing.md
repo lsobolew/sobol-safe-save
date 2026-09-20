@@ -1,5 +1,11 @@
 # Testing
 
+Run `npm run test:cli` for the Node tooling tests (no Docker required). They cover configuration,
+test planning, dashboard queue recovery, skill resource paths, and packaging failure handling.
+In upgraded projects, run `node --test cli/tests/*.test.mjs` directly: these tests live inside
+the lab-owned `cli/` directory and do not require changes to your project's `package.json`.
+CI also runs the blocks' `types` script explicitly; Vite builds do not check TypeScript types.
+
 ```bash
 ./bin/wpx test                                    # unit + integration + e2e, everywhere
 ./bin/wpx test unit --targets=latest              # one suite, one version
@@ -69,6 +75,10 @@ the plugin directory, for two reasons. They exercise a whole running site rather
 and `@wordpress/scripts` installs a second copy of Playwright inside the plugin's `node_modules`
 which the two instances cannot reconcile.
 
+Block tests ignore one exact React `createRoot` warning only on WordPress 6.6: its core
+`initializeEditor` triggers it even in an empty editor. The runner supplies `WPLAB_WP_VERSION`
+so this exception does not hide the same warning on newer versions or any other console error.
+
 ## In CI
 
 GitHub Actions runs two lanes, because the full matrix is roughly four times the cost of the one
@@ -88,7 +98,7 @@ the end-to-end step, which pins every target to the default theme. Both flags wo
 
 Label a pull request `ci:full` when it touches the things the matrix exists for - rewrite rules,
 the block editor, REST, multisite, or anything version-dependent in PHP. That is the same rule as
-the local one in `CLAUDE.md`, moved to where it costs money.
+the local one in `AGENTS.md`, moved to where it costs money.
 
 Widen the quick lane by editing `QUICK_TARGETS` in `.github/workflows/ci.yml`; the ids come from
 `wp-matrix.json`, so `latest,min` is a one-line change if a project wants the oldest supported

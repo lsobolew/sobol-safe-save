@@ -49,10 +49,12 @@ After renaming, rebuild the sites so they mount the new directories:
 ./bin/wpx skills global    # this repository's own skills, at user level
 ```
 
-The first pulls the WordPress skill pack into `.claude/skills/` and records the upstream commit in
-`.claude/wplab-skills.lock.json`; commit both.
+The first pulls the WordPress skill pack into canonical `.agents/skills/`, generates the
+`.claude/skills/` compatibility copy, and records the upstream commit in
+`.agents/wplab-skills.lock.json`; commit all three.
 
-The second copies `wp-plugin-lab` and `create-wp-plugin` into `~/.claude/skills/`, which is what
+The second copies the repository-owned skills into `~/.agents/skills/` and `~/.claude/skills/`,
+which is what
 lets an agent act on "clone the starter and build me a plugin X" from an empty directory - a
 project skill would only become visible after the clone already happened. See [skills](skills.md).
 
@@ -77,5 +79,6 @@ live.
 | `tests/e2e/` | Playwright specs, split into `free/` and `pro/` |
 | `plugins/<slug>/blocks/` | Block sources in TypeScript |
 | `themes/` | Local themes, mounted into every container |
-| `.claude/skills/` | Instructions for AI agents working here |
+| `.agents/skills/` | Canonical instructions for AI agents working here |
+| `.claude/skills/` | Generated Claude Code compatibility copy |
 | `.wplab/` | Logs, test results, caches (never committed) |

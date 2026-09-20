@@ -32,6 +32,6 @@ jobs:
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-          SLUG: my-plugin
-          BUILD_DIR: .wplab/build/my-plugin
+          SLUG: sobol-safe-save
+          BUILD_DIR: .wplab/build/sobol-safe-save
           ASSETS_DIR: .wordpress-org

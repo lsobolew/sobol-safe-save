@@ -5,37 +5,36 @@
 			"id": "latest",
 			"wp": "latest",
 			"php": "8.4",
-			"port": 8091
+			"port": 8291
 		},
 		{
 			"id": "prev",
 			"wp": "latest-1",
 			"php": "8.3",
-			"port": 8092
+			"port": 8292
 		},
 		{
 			"id": "lts",
 			"wp": "6.9",
 			"php": "8.2",
-			"port": 8093
+			"port": 8293
 		},
 		{
 			"id": "min",
 			"wp": "6.8",
 			"php": "7.4",
-			"port": 8094
+			"port": 8294
 		},
 		{
 			"id": "nightly",
 			"wp": "nightly",
 			"php": "8.4",
-			"port": 8095,
+			"port": 8295,
 			"multisite": true
 		}
 	],
 	"editions": [
-		"free",
-		"pro"
+		"free"
 	],
 	"defaults": {
 		"db": "mariadb:11",
@@ -44,9 +43,9 @@
 		"locale": "en_US"
 	},
 	"ports": {
-		"dashboard": 7777,
-		"mailpitUi": 8025,
-		"database": 13306
+		"dashboard": 7779,
+		"mailpitUi": 8027,
+		"database": 13309
 	},
 	"themes": {
 		"//": "Themes the block is tested against. 'sweep' says where the full set runs; every other target uses 'default'. A block behaves differently on a block theme than on a classic one, which is why the set mixes both.",

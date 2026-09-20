@@ -14,9 +14,10 @@ name: CI
 on:
   push:
     branches: [ main, trunk ]
-    paths-ignore: [ '**.md', 'docs/**', 'LICENSE' ]
+    paths-ignore: [ '**.md', 'LICENSE' ]
   pull_request:
-    paths-ignore: [ '**.md', 'docs/**', 'LICENSE' ]
+    types: [ opened, synchronize, reopened, labeled, unlabeled ]
+    paths-ignore: [ '**.md', 'LICENSE' ]
   schedule:
     # Monday, early. The weekly full sweep against every supported WordPress, including nightly.
     - cron: '17 3 * * 1'
@@ -36,6 +37,17 @@ env:
   QUICK_TARGETS: latest
 
 jobs:
+  tooling:
+    name: CLI and dashboard tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: node --test cli/tests/*.test.mjs
+
   # The job matrix is generated from wp-matrix.json, so adding a WordPress version to that file
   # is all it takes to have CI cover it too.
   matrix:
@@ -116,6 +128,8 @@ jobs:
       # fails - which looks like a broken test suite rather than a missing step.
       - name: Build the blocks
         run: ./bin/wpx build --edition=both --skip-package
+      - name: Check block types
+        run: ./bin/wpx test types --targets=${{ matrix.id }} --edition=both
       - name: Start WordPress ${{ matrix.wp }}
         run: ./bin/wpx up ${{ matrix.id }}
       - name: Unit and integration tests

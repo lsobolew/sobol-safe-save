@@ -37,7 +37,7 @@ async function ensureBrowser( onLog ) {
  * Runs Playwright against one WordPress instance in one edition.
  */
 /**
- * Refuses to run when a plugin has block sources but no build.
+ * Refuses to run when a plugin has editor sources but no build.
  *
  * `build/` is generated and therefore not in version control, so a fresh clone - or a CI job that
  * checks out and goes straight to the tests - has block sources and nothing built from them. The
@@ -45,14 +45,21 @@ async function ensureBrowser( onLog ) {
  * block. That reads as dozens of unrelated failures rather than one missing step, and it is not
  * obvious from any of them what actually happened.
  *
+ * `scripts/` counts for the same reason: a plugin whose editor UI is a registerPlugin() sidebar
+ * rather than a block fails just as silently, only with the panel missing instead of the block.
+ *
  * @param {(text: string) => void} emit Log sink.
- * @return {boolean} Whether every plugin with blocks has been built.
+ * @return {boolean} Whether every plugin with editor sources has been built.
  */
 function missingBuildsReported( emit ) {
 	const missing = [];
 
 	for ( const { dir, abs } of pluginDirs() ) {
-		if ( ! fs.existsSync( path.join( abs, 'blocks' ) ) ) continue;
+		const hasSources = [ 'blocks', 'scripts' ].some( ( source ) =>
+			fs.existsSync( path.join( abs, source ) )
+		);
+
+		if ( ! hasSources ) continue;
 
 		const build = path.join( abs, 'build' );
 
@@ -64,10 +71,10 @@ function missingBuildsReported( emit ) {
 	if ( ! missing.length ) return true;
 
 	emit(
-		`\nNo built blocks in: ${ missing.join( ', ' ) }\n` +
+		`\nNothing built in: ${ missing.join( ', ' ) }\n` +
 			`build/ is generated and not committed, so it has to be produced before the end-to-end\n` +
-			`tests can see the blocks. Without it the plugin registers none of them and every test\n` +
-			`that inserts one fails for a reason that has nothing to do with the test.\n\n` +
+			`tests can see the editor code. Without it the plugin registers none of it and every\n` +
+			`test fails for a reason that has nothing to do with the test.\n\n` +
 			`  ./bin/wpx build --skip-package\n\n`
 	);
 
@@ -93,7 +100,7 @@ export async function runE2e( { matrix, target, edition, theme, filter, onLog, h
 
 	if ( ! ( await ensureBrowser( emit ) ) ) return { ok: false, file: null };
 
-	await applyEdition( target, edition, { onLog: emit } );
+	if ( ! await applyEdition( target, edition, { onLog: emit } ) ) return { ok: false, file: null };
 
 	// The theme is switched before the run rather than inside a test: activating it mid-suite
 	// would leave the previous test's page rendered by a different theme than it asserted on.
@@ -133,6 +140,7 @@ export async function runE2e( { matrix, target, edition, theme, filter, onLog, h
 			WP_USERNAME: ADMIN_USER,
 			WP_PASSWORD: ADMIN_PASSWORD,
 			WPLAB_TARGET: target.id,
+			WPLAB_WP_VERSION: target.wpVersion,
 			WPLAB_EDITION: edition,
 			WPLAB_THEME: theme?.slug || '',
 			WPLAB_THEME_ALIAS: themeAlias || '',

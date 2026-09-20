@@ -1,0 +1,101 @@
+/**
+ * The document panel.
+ *
+ * Colours are the admin greys WordPress uses for dividers and code backgrounds, with the accent
+ * taken from `--wp-admin-theme-color` so the panel follows whichever colour scheme the user picked.
+ * The editor has no dark mode of its own, so there is nothing to invert for.
+ */
+
+.sobol-safe-save-panel__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/*
+ * A rule between findings rather than a box around each. Two blocks losing two different things
+ * are two separate problems and need to read as such, but a panel this narrow turns cards into
+ * clutter - the same divider Gutenberg uses between its own panel rows says it with less.
+ */
+.sobol-safe-save-panel__item {
+	padding: 16px 0;
+	border-top: 1px solid #e0e0e0;
+
+	&:first-child {
+		padding-top: 0;
+		border-top: 0;
+	}
+
+	&:last-child {
+		padding-bottom: 0;
+	}
+}
+
+.sobol-safe-save-panel__name {
+	margin: 0 0 6px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.sobol-safe-save-panel__changes {
+	margin: 0 0 8px;
+	padding-left: 18px;
+	list-style: disc;
+	font-size: 12px;
+	line-height: 1.5;
+
+	li + li {
+		margin-top: 4px;
+	}
+}
+
+.sobol-safe-save-panel__diff {
+	margin: 0 0 10px;
+
+	> summary {
+		cursor: pointer;
+		color: var(--wp-admin-theme-color, #3858e9);
+		font-size: 12px;
+		list-style-position: inside;
+	}
+}
+
+.sobol-safe-save-panel__code {
+	margin: 6px 0 0;
+	padding: 8px;
+	max-height: 14em;
+	overflow: auto;
+	border-radius: 2px;
+	background: #f0f0f1;
+	font-size: 11px;
+	line-height: 1.6;
+	white-space: pre-wrap;
+	word-break: break-word;
+
+	/* Padded so that a change as small as one character is still something you can see. */
+	del {
+		padding: 0 1px;
+		border-radius: 2px;
+		background: #f8d7da;
+		text-decoration: line-through;
+	}
+
+	ins {
+		padding: 0 1px;
+		border-radius: 2px;
+		background: #d1e7dd;
+		text-decoration: none;
+	}
+}
+
+.sobol-safe-save-panel__trimmed {
+	margin: 4px 0 0;
+	color: #757575;
+	font-size: 11px;
+	font-style: italic;
+}
+
+.sobol-safe-save-panel__note {
+	margin-bottom: 12px;
+}

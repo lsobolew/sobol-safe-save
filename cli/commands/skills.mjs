@@ -5,20 +5,50 @@ import { paths, ensureDir, readJson, writeJson } from '../lib/paths.mjs';
 import { starter } from '../lib/config.mjs';
 import { syncCheckout as gitSync, remoteHead } from '../lib/git-source.mjs';
 import { log, c, UserError } from '../lib/log.mjs';
+import { run as spawn } from '../lib/proc.mjs';
+import { adaptSkillDirectory, validateSkillResources, resolveSkillDependencies } from '../lib/skill-paths.mjs';
 
 const DEFAULTS = {
 	repo: 'https://github.com/WordPress/agent-skills.git',
 	// WordPress projects name their default branch "trunk", not "main".
 	ref: '',
-	targets: [ 'claude' ],
+	targets: [ 'codex', 'claude' ],
 	install: [],
 };
 
-const CHECKOUT = () => path.join( paths.cache, 'agent-skills' );
+const TARGETS = {
+	codex: {
+		build: 'codex',
+		source: [ 'codex', '.codex', 'skills' ],
+		destination: [ '.agents', 'skills' ],
+	},
+	claude: {
+		build: 'claude',
+		source: [ 'claude', '.claude', 'skills' ],
+		destination: [ '.claude', 'skills' ],
+	},
+	vscode: {
+		build: 'vscode',
+		source: [ 'vscode', '.github', 'skills' ],
+		destination: [ '.github', 'skills' ],
+	},
+	cursor: {
+		build: 'cursor',
+		source: [ 'cursor', '.cursor', 'skills' ],
+		destination: [ '.cursor', 'skills' ],
+	},
+	antigravity: {
+		build: 'antigravity',
+		source: [ 'antigravity', '.agents', 'skills' ],
+		destination: [ '.agents', 'skills' ],
+	},
+};
 
 /** Skills maintained in this repository, as opposed to the ones installed from WordPress. */
 const OWN_SKILLS = [ 'wp-plugin-lab', 'create-wp-plugin', 'wp-org-release' ];
-const LOCK_FILE = () => path.join( paths.root, '.claude', 'wplab-skills.lock.json' );
+const SKILLS_DIR = () => path.join( paths.root, '.agents', 'skills' );
+const LOCK_FILE = () => path.join( paths.root, '.agents', 'wplab-skills.lock.json' );
+const LEGACY_LOCK_FILE = () => path.join( paths.root, '.claude', 'wplab-skills.lock.json' );
 
 function config() {
 	const configured = starter().skills || {};
@@ -32,9 +62,90 @@ function config() {
 }
 
 function readLock() {
-	const file = LOCK_FILE();
+	const file = fs.existsSync( LOCK_FILE() ) ? LOCK_FILE() : LEGACY_LOCK_FILE();
 
 	return fs.existsSync( file ) ? readJson( file ) : null;
+}
+
+function targetConfig( name ) {
+	const target = TARGETS[ name ];
+
+	if ( ! target ) {
+		throw new UserError(
+			`Unknown skill target "${ name }". Available: ${ Object.keys( TARGETS ).join( ', ' ) }.`
+		);
+	}
+
+	return target;
+}
+
+function copySkill( source, destination ) {
+	fs.rmSync( destination, { recursive: true, force: true } );
+	fs.mkdirSync( path.dirname( destination ), { recursive: true } );
+	fs.cpSync( source, destination, { recursive: true } );
+}
+
+function ownSkillSource( name ) {
+	const canonical = path.join( SKILLS_DIR(), name );
+	const legacy = path.join( paths.root, '.claude', 'skills', name );
+
+	return fs.existsSync( canonical ) ? canonical : legacy;
+}
+
+function migrateLegacyOwnSkills( dryRun ) {
+	for ( const name of OWN_SKILLS ) {
+		const canonical = path.join( SKILLS_DIR(), name );
+		const legacy = path.join( paths.root, '.claude', 'skills', name );
+
+		if ( fs.existsSync( canonical ) || ! fs.existsSync( legacy ) ) continue;
+
+		log.info( `  ${ dryRun ? 'Would migrate' : 'Migrating' } ${ name } to .agents/skills` );
+		if ( ! dryRun ) copySkill( legacy, canonical );
+	}
+}
+
+export function installTargets( checkoutDir, targets, wanted, previous, dryRun, root = paths.root ) {
+	const dist = path.join( checkoutDir, 'dist' );
+	const canonicalRoot = path.join( root, '.agents', 'skills' );
+	const obsolete = ( previous?.skills || [] ).filter( ( name ) => ! wanted.includes( name ) );
+	for ( const skill of [ ...wanted, ...obsolete ] ) {
+		if ( ! /^[a-z][a-z0-9-]*$/.test( skill ) || OWN_SKILLS.includes( skill ) ) {
+			throw new UserError( `Invalid upstream skill name: ${ skill }` );
+		}
+	}
+
+	for ( const name of targets ) {
+		const target = targetConfig( name );
+		const sourceRoot = path.join( dist, ...target.source );
+		const destinationRoot = path.join( root, ...target.destination );
+
+		if ( dryRun ) {
+			log.info( `  Would install ${ wanted.length } skill(s) to ${ path.relative( root, destinationRoot ) }` );
+			continue;
+		}
+
+		for ( const skill of obsolete ) {
+			fs.rmSync( path.join( destinationRoot, skill ), { recursive: true, force: true } );
+		}
+
+		for ( const skill of wanted ) {
+			copySkill( path.join( sourceRoot, skill ), path.join( destinationRoot, skill ) );
+			adaptSkillDirectory( path.join( destinationRoot, skill ), '.agents/skills' );
+		}
+
+		// Repository-owned skills are authored in the canonical Codex directory and mirrored to
+		// every configured target. Upstream updates never overwrite them.
+		if ( destinationRoot !== canonicalRoot ) {
+			for ( const skill of OWN_SKILLS ) {
+				const source = path.join( canonicalRoot, skill );
+				if ( fs.existsSync( source ) ) {
+					copySkill( source, path.join( destinationRoot, skill ) );
+				}
+			}
+		}
+
+		log.ok( `Installed ${ wanted.length } upstream skill(s) for ${ name } to ${ path.relative( root, destinationRoot ) }` );
+	}
 }
 
 /** Clones or fast-forwards the skills checkout; the git mechanics live in lib/git-source.mjs. */
@@ -78,8 +189,8 @@ async function install( argv ) {
 		? listFlag( flags.skills )
 		: cfg.install;
 
-	const wanted = requested.length ? requested : available;
-	const unknown = wanted.filter( ( name ) => ! available.includes( name ) );
+	const selected = requested.length ? requested : available;
+	const unknown = selected.filter( ( name ) => ! available.includes( name ) );
 
 	if ( unknown.length ) {
 		throw new UserError(
@@ -87,8 +198,19 @@ async function install( argv ) {
 		);
 	}
 
+	const wanted = resolveSkillDependencies( checkout.dir, selected );
+	const dependencies = wanted.filter( ( name ) => ! selected.includes( name ) );
+	if ( dependencies.length ) log.info( `Including required skills: ${ dependencies.join( ', ' ) }` );
 	log.step( 'Building the skill pack' );
-	const build = await spawn( 'node', [ 'shared/scripts/skillpack-build.mjs', '--clean' ], {
+	const selectedTargets = listFlag( flags.targets ).length ? listFlag( flags.targets ) : cfg.targets;
+	const targets = [ ...new Set( [ 'codex', ...selectedTargets ] ) ];
+	const buildTargets = [ ...new Set( targets.map( ( name ) => targetConfig( name ).build ) ) ];
+	const build = await spawn( 'node', [
+		'shared/scripts/skillpack-build.mjs',
+		'--clean',
+		`--targets=${ buildTargets.join( ',' ) }`,
+		`--skills=${ wanted.join( ',' ) }`,
+	], {
 		cwd: checkout.dir,
 		onData: () => {},
 	} );
@@ -97,28 +219,15 @@ async function install( argv ) {
 		throw new UserError( 'skillpack-build failed.' );
 	}
 
-	const targets = listFlag( flags.targets ).length ? listFlag( flags.targets ) : cfg.targets;
-
 	log.step( `Installing ${ wanted.length } skill(s) for: ${ targets.join( ', ' ) }` );
-
-	const args = [
-		'shared/scripts/skillpack-install.mjs',
-		`--dest=${ paths.root }`,
-		`--targets=${ targets.join( ',' ) }`,
-		`--skills=${ wanted.join( ',' ) }`,
-	];
-
-	if ( flags[ 'dry-run' ] ) args.push( '--dry-run' );
-
-	const { code } = await spawn( 'node', args, { cwd: checkout.dir } );
-
-	if ( code !== 0 ) {
-		throw new UserError( 'skillpack-install failed.' );
-	}
+	const previous = readLock();
+	migrateLegacyOwnSkills( flags[ 'dry-run' ] );
+	installTargets( checkout.dir, targets, wanted, previous, flags[ 'dry-run' ] );
 
 	if ( flags[ 'dry-run' ] ) return 0;
-
-	const previous = readLock();
+	for ( const name of targets ) {
+		validateSkillResources( path.join( paths.root, ...targetConfig( name ).destination ), paths.root );
+	}
 
 	// The lock file lives next to the skills rather than inside them: the installer runs in
 	// "replace" mode and wipes the target directory on every update.
@@ -132,19 +241,20 @@ async function install( argv ) {
 		targets,
 		skills: wanted,
 	} );
+	fs.rmSync( LEGACY_LOCK_FILE(), { force: true } );
 
 	log.blank();
 
 	if ( previous && previous.commit !== checkout.commit ) {
 		log.ok( `Skills updated: ${ previous.commit.slice( 0, 7 ) } -> ${ checkout.commit.slice( 0, 7 ) }` );
-		log.dim( '   Review the change with: git diff .claude/skills' );
+		log.dim( '   Review the change with: git diff .agents/skills .claude/skills' );
 	} else if ( previous ) {
 		log.ok( `Skills already at the newest commit (${ checkout.commit.slice( 0, 7 ) })` );
 	} else {
 		log.ok( `Installed ${ wanted.length } skill(s) at commit ${ checkout.commit.slice( 0, 7 ) }` );
 	}
 
-	log.dim( '   Commit .claude/skills so the whole team gets the same instructions.' );
+	log.dim( '   Commit .agents/skills and the generated .claude/skills compatibility copy.' );
 	log.blank();
 
 	return 0;
@@ -230,38 +340,45 @@ async function installGlobal( argv ) {
 		throw new UserError( 'Could not determine the home directory.' );
 	}
 
-	const target = path.join( home, '.claude', 'skills' );
+	const requestedTargets = listFlag( flags.targets ).length
+		? listFlag( flags.targets )
+		: [ 'codex', 'claude' ];
+	const globalTargets = {
+		codex: path.join( home, '.agents', 'skills' ),
+		claude: path.join( home, '.claude', 'skills' ),
+	};
 	const installed = [];
 
-	for ( const name of OWN_SKILLS ) {
-		const source = path.join( paths.root, '.claude', 'skills', name );
-
-		if ( ! fs.existsSync( source ) ) continue;
-
-		const destination = path.join( target, name );
-
-		if ( ! flags[ 'dry-run' ] ) {
-			fs.rmSync( destination, { recursive: true, force: true } );
-			fs.mkdirSync( path.dirname( destination ), { recursive: true } );
-			fs.cpSync( source, destination, { recursive: true } );
+	for ( const targetName of requestedTargets ) {
+		const target = globalTargets[ targetName ];
+		if ( ! target ) {
+			throw new UserError( 'Global skills support the codex and claude targets.' );
 		}
 
-		installed.push( name );
+		for ( const name of OWN_SKILLS ) {
+			const source = ownSkillSource( name );
+
+			if ( ! fs.existsSync( source ) ) continue;
+
+			if ( ! flags[ 'dry-run' ] ) {
+				copySkill( source, path.join( target, name ) );
+			}
+
+			installed.push( `${ targetName }:${ name }` );
+		}
 	}
 
 	log.blank();
 
 	if ( ! installed.length ) {
-		log.warn( 'No skills of our own found in .claude/skills.' );
+		log.warn( 'No skills of our own found in .agents/skills.' );
 		log.blank();
 
 		return 1;
 	}
 
 	log.ok(
-		`${ flags[ 'dry-run' ] ? 'Would install' : 'Installed' } ${ installed.join( ', ' ) } into ${ c.cyan(
-			target
-		) }`
+		`${ flags[ 'dry-run' ] ? 'Would install' : 'Installed' } ${ installed.join( ', ' ) }`
 	);
 	log.dim( '   They now work from any directory, including an empty one - which is what makes' );
 	log.dim( '   "clone the starter and build me a plugin X" a single prompt.' );

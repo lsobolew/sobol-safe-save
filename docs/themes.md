@@ -20,7 +20,7 @@ In `wp-matrix.json`:
 
 ```jsonc
 "themes": {
-  "default": "twentytwentyfive",
+  "default": "twentytwentyfour",
   "sweep": {
     "targets": [ "latest" ],
     "themes": [ "twentytwentyfive", "twentytwentyfour", "twentytwentyone" ]

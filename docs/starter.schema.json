@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\\\[A-Za-z_][A-Za-z0-9_]*)*$"
+    },
+    "constantPrefix": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "hookPrefix": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "textDomain": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "requiresWp": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+    },
+    "requiresPhp": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+    },
+    "editions": {
+      "type": "object",
+      "properties": {
+        "free": {
+          "type": "object",
+          "properties": {
+            "dir": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "wporg": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "dir",
+            "enabled"
+          ]
+        },
+        "pro": {
+          "type": "object",
+          "properties": {
+            "dir": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "wporg": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "dir",
+            "enabled"
+          ]
+        }
+      },
+      "required": [
+        "free"
+      ],
+      "patternProperties": { "^//": {} },
+      "additionalProperties": false
+    },
+    "features": {
+      "type": "object",
+      "patternProperties": { "^//": {} },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "edition": {
+            "enum": [
+              "free",
+              "pro"
+            ]
+          }
+        },
+        "required": [
+          "enabled",
+          "edition"
+        ]
+      }
+    },
+    "skills": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "codex",
+              "claude",
+              "cursor",
+              "vscode",
+              "antigravity"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "install": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": []
+    }
+  },
+  "required": [
+    "name",
+    "slug",
+    "namespace",
+    "constantPrefix",
+    "hookPrefix",
+    "textDomain",
+    "requiresWp",
+    "requiresPhp",
+    "editions"
+  ]
+}
