@@ -18,6 +18,11 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
 
+      - name: Derive the numeric SVN version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: echo "SVN_VERSION=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
+
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -33,5 +38,6 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: sobol-safe-save
+          VERSION: ${{ env.SVN_VERSION }}
           BUILD_DIR: .wplab/build/sobol-safe-save
           ASSETS_DIR: .wordpress-org
