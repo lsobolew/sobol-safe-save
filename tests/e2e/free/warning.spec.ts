@@ -320,6 +320,23 @@ test.describe( 'Warning an author before they lose content', () => {
 		expect( await selectedBlock( page ) ).toBe( first );
 	} );
 
+	test( 'details opens the Sobol Safe Save panel with the findings visible', async ( {
+		admin,
+		editor,
+		page,
+	} ) => {
+		await startPost( admin, editor );
+		await writeRiskyContent( editor );
+
+		await expect( warningNotice( page ) ).toBeVisible( { timeout: SETTLE } );
+		await page.getByRole( 'button', { name: 'Details' } ).click();
+
+		await expect( panel( page ) ).toBeVisible( { timeout: SETTLE } );
+		await expect( panel( page ).getByText( /<iframe> element will be removed/ ) ).toBeVisible( {
+			timeout: SETTLE,
+		} );
+	} );
+
 	test( 'the post still saves after the warning', async ( { admin, editor, page } ) => {
 		await startPost( admin, editor, 'Saved despite the warning' );
 		await writeRiskyContent( editor );

@@ -2,6 +2,7 @@
  * The warning above the editor.
  */
 import { dispatch, select } from '@wordpress/data';
+import { store as editorStore } from '@wordpress/editor';
 import { __ } from '@wordpress/i18n';
 import { store as noticesStore } from '@wordpress/notices';
 
@@ -54,6 +55,23 @@ function reviewNextBlock( report: Report ): void {
 	}
 }
 
+/** Opens the document sidebar with Sobol Safe Save expanded to its findings. */
+function openDetails(): void {
+	( dispatch( 'core/edit-post' ) as { openGeneralSidebar: ( name: string ) => void } ).openGeneralSidebar(
+		'edit-post/document'
+	);
+
+	// PluginDocumentSettingPanel namespaces its name with the registerPlugin id.
+	const panel = 'sobol-safe-save/sobol-safe-save';
+	const editor = select( editorStore ) as { isEditorPanelOpened: ( name: string ) => boolean };
+
+	if ( ! editor.isEditorPanelOpened( panel ) ) {
+		( dispatch( editorStore ) as { toggleEditorPanelOpened: ( name: string ) => void } ).toggleEditorPanelOpened(
+			panel
+		);
+	}
+}
+
 /**
  * Brings the notice in line with the latest analysis.
  *
@@ -98,14 +116,20 @@ export function syncNotice( report: Report | null ): void {
 	// A different complaint means starting the walk again from the top.
 	cursor = 0;
 
-	const actions = report.blocks.length
-		? [
-				{
-					label: __( 'Show me', 'sobol-safe-save' ),
-					onClick: () => reviewNextBlock( report ),
-				},
-		  ]
-		: [];
+	const actions = [
+		...( report.blocks.length
+			? [
+					{
+						label: __( 'Show me', 'sobol-safe-save' ),
+						onClick: () => reviewNextBlock( report ),
+					},
+				]
+			: [] ),
+		{
+			label: __( 'Details', 'sobol-safe-save' ),
+			onClick: openDetails,
+		},
+	];
 
 	notices.createWarningNotice( summarise( report, blockTitle ), {
 		id: NOTICE_ID,
