@@ -1,5 +1,8 @@
 # Upgrading the lab
 
+The lab also includes `./bin/wpx playground` for manual testing of packaged plugins. Its code and
+defaults travel with upgrades; its site data and project-specific settings do not. See [playground](playground.md).
+
 A repository created from this starter owns a copy of the tooling. That is what makes it work
 offline, hackable and reproducible - and it is also why improvements do not arrive on their own.
 `wpx upgrade` is how they do.

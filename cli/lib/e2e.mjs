@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { discoverBlocks, discoverScripts } from '../vite/wordpress-blocks.mjs';
 import { paths, ensureDir } from './paths.mjs';
 import { starter, pluginDirs } from './config.mjs';
 import { ADMIN_USER, ADMIN_PASSWORD } from './compose-render.mjs';
@@ -49,15 +50,15 @@ async function ensureBrowser( onLog ) {
  * rather than a block fails just as silently, only with the panel missing instead of the block.
  *
  * @param {(text: string) => void} emit Log sink.
+ * @param {{dir: string, abs: string}[]} [plugins] Plugin directories to inspect.
  * @return {boolean} Whether every plugin with editor sources has been built.
  */
-function missingBuildsReported( emit ) {
+export function missingBuildsReported( emit, plugins = pluginDirs() ) {
 	const missing = [];
 
-	for ( const { dir, abs } of pluginDirs() ) {
-		const hasSources = [ 'blocks', 'scripts' ].some( ( source ) =>
-			fs.existsSync( path.join( abs, source ) )
-		);
+	for ( const { dir, abs } of plugins ) {
+		// Use the builder's discovery rules: shared helpers and maintenance scripts are not bundles.
+		const hasSources = discoverBlocks( abs ).length || discoverScripts( abs ).length;
 
 		if ( ! hasSources ) continue;
 

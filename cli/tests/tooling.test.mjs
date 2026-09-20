@@ -5,6 +5,8 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { packageScript } from '../../cli/commands/build.mjs';
+import { discoverBlocks, discoverScripts } from '../../cli/vite/wordpress-blocks.mjs';
+import { missingBuildsReported } from '../../cli/lib/e2e.mjs';
 import { installTargets } from '../../cli/commands/skills.mjs';
 import { pluginCheckPassed } from '../../cli/lib/plugin-check.mjs';
 import { createJobQueue } from '../../dashboard/job-queue.mjs';
@@ -42,6 +44,56 @@ cd() { :; }; wp() { :; }; find() { :; };
 	const result = spawnSync( 'bash', [ '-c', prelude + packageScript( 'my-plugin', '0.1.0' ) ], { encoding: 'utf8' } );
 	assert.equal( result.status, 42, result.stderr );
 	assert.ok( ! result.stdout.includes( 'unexpected-zip' ) );
+} );
+
+test( 'packaging excludes editor sources from the generated translation catalogue', () => {
+	assert.match( packageScript( 'my-plugin', '0.1.0' ), /--exclude=blocks,scripts,tests,node_modules,vendor/ );
+} );
+
+test( 'editor scripts are discovered independently from blocks', () => {
+	const root = fs.mkdtempSync( path.join( os.tmpdir(), 'wplab-editor-scripts-test-' ) );
+	const put = ( relative, text = '' ) => {
+		const file = path.join( root, relative );
+		fs.mkdirSync( path.dirname( file ), { recursive: true } );
+		fs.writeFileSync( file, text );
+	};
+	try {
+		put( 'scripts/sidebar/index.tsx' );
+		put( 'scripts/shared/helper.ts' );
+		put( 'blocks/callout/block.json', '{}' );
+		put( 'blocks/callout/index.js' );
+		assert.deepEqual( discoverScripts( root ).map( ( entry ) => entry.name ), [ 'sidebar' ] );
+		assert.deepEqual( discoverBlocks( root ).map( ( entry ) => entry.name ), [ 'callout' ] );
+	} finally { fs.rmSync( root, { recursive: true, force: true } ); }
+} );
+
+test( 'E2E preflight ignores helpers but still requires builds for actual editor bundles', () => {
+	const root = fs.mkdtempSync( path.join( os.tmpdir(), 'wplab-preflight-test-' ) );
+	const put = ( relative ) => {
+		const file = path.join( root, relative );
+		fs.mkdirSync( path.dirname( file ), { recursive: true } );
+		fs.writeFileSync( file, '' );
+	};
+	const check = ( name ) => {
+		const messages = [];
+		const ok = missingBuildsReported( ( text ) => messages.push( text ), [ { dir: name, abs: path.join( root, name ) } ] );
+		return { ok, messages };
+	};
+	try {
+		put( 'helpers/scripts/shared/helper.js' );
+		put( 'helpers/scripts/release.mjs' );
+		put( 'helpers/blocks/shared/helper.ts' );
+		assert.deepEqual( check( 'helpers' ), { ok: true, messages: [] } );
+		for ( const [ name, source ] of [ [ 'editor', 'scripts/sidebar/index.tsx' ], [ 'block', 'blocks/callout/block.json' ] ] ) {
+			put( `${ name }/${ source }` );
+			assert.equal( check( name ).ok, false );
+			assert.match( check( name ).messages.join( '' ), /Nothing built in:/ );
+			fs.mkdirSync( path.join( root, name, 'build' ) );
+			assert.equal( check( name ).ok, false );
+			put( `${ name }/build/bundle/index.js` );
+			assert.deepEqual( check( name ), { ok: true, messages: [] } );
+		}
+	} finally { fs.rmSync( root, { recursive: true, force: true } ); }
 } );
 
 test( 'Plugin Check distinguishes valid reports from failures and malformed output', () => {
@@ -108,6 +160,13 @@ test( 'CI tooling and type checks do not depend on product-owned npm scripts or 
 	assert.ok( workflow.includes( './bin/wpx test types --targets=${{ matrix.id }} --edition=both' ) );
 	assert.ok( ! workflow.includes( 'plugins/my-plugin' ) );
 	assert.ok( ! workflow.includes( 'npm run test:cli' ) );
+} );
+
+test( 'the manual WordPress.org deploy converts Git tags to numeric SVN versions', () => {
+	const workflow = fs.readFileSync( new URL( '../../.github/workflows/deploy-wporg.yml', import.meta.url ), 'utf8' );
+	assert.match( workflow, /SVN_VERSION=\$\{RELEASE_TAG#v\}/ );
+	assert.match( workflow, /VERSION: \$\{\{ env\.SVN_VERSION \}\}/ );
+	assert.doesNotMatch( workflow, /VERSION: \$\{\{ inputs\.tag \}\}/ );
 } );
 
 test( 'installed skill resource paths are adapted idempotently and missing resources fail', () => {

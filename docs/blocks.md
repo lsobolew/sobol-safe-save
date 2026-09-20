@@ -113,6 +113,17 @@ with no dependencies, loads before the editor exists, and the block silently nev
 build reuses the mapping from `@wordpress/dependency-extraction-webpack-plugin`, so the handles are
 exactly the ones the official tooling would emit.
 
+### Editor scripts without a block
+
+Editor UI that does not register a block—a plugin sidebar, block filter, or editor extension—uses
+the same build pipeline. Put each entry point in `scripts/<name>/index.tsx` (or `.ts`, `.jsx`, or
+`.js`) and call `buildScripts()` next to `buildBlocks()` in the plugin's `build.mjs`. The output is
+`build/<name>/index.js`, `index.css`, and `index.asset.php`; the plugin's PHP enqueues those files.
+
+Source directories under `scripts/` without an `index.*` entry are ignored, so shared helpers can
+live there without becoming their own bundles. Script and block names must be unique because both
+write to the same `build/<name>/` directory.
+
 ## TypeScript
 
 `strict` is on, along with `noUncheckedIndexedAccess`. Two accommodations are worth knowing about:

@@ -2,6 +2,26 @@
   "$schema": "https://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "playground": {
+      "type": "object",
+      "properties": {
+        "wp": { "type": "string", "pattern": "^(latest|\\d+\\.\\d+(\\.\\d+)?)$" },
+        "php": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+        "multisite": { "type": "boolean" },
+        "edition": { "enum": [ "free", "pro", "both" ] },
+        "plugins": { "type": "array", "items": { "type": "string" } },
+        "ports": {
+          "type": "object",
+          "properties": {
+            "wordpress": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+            "mailpit": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+            "database": { "type": "integer", "minimum": 1024, "maximum": 65535 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "$schema": {
       "type": "string"
     },

@@ -24,7 +24,18 @@ function pluginVersion( dir ) {
 		throw new UserError( `No "Version:" header in ${ file }` );
 	}
 
-	return match[ 1 ].trim();
+	const version = match[ 1 ].trim();
+	if ( ! /^[a-zA-Z0-9][a-zA-Z0-9.+_-]*$/.test( version ) ) throw new UserError( `Unsafe plugin version: ${ version }` );
+	return version;
+}
+
+/** Shared asset/package pipeline. The caller selects the container, never the source contents. */
+export async function buildPackage( dir, execute, { skipAssets = false } = {} ) {
+	if ( ! /^[a-z][a-z0-9-]*$/.test( dir ) ) throw new UserError( 'Invalid plugin directory.' );
+	const version = pluginVersion( dir );
+	if ( ! skipAssets && ! await buildAssets( dir ) ) throw new UserError( `${ dir }: asset build failed` );
+	if ( ! await execute( packageScript( dir, version ) ) ) throw new UserError( `${ dir }: packaging failed` );
+	return { dir, version, zipName: `${ dir }-${ version }.zip` };
 }
 
 /** Builds the editor assets on the host (Node is here, PHP is not). */
@@ -55,14 +66,6 @@ async function buildAssets( dir ) {
  * Assembles the distributable inside a container: only there is PHP available, and only there can
  * `composer install --no-dev` produce the exact autoloader that ships to users.
  */
-async function packagePlugin( target, dir, version, onLog ) {
-	const { code } = await compose(
-		[ 'exec', '-T', target.service, 'bash', '-lc', packageScript( dir, version ) ],
-		{ onData: onLog }
-	);
-	return code === 0;
-}
-
 export function packageScript( dir, version ) {
 	const stage = `/wplab/build/${ dir }`;
 	const source = `/var/www/html/wp-content/plugins/${ dir }`;
@@ -230,19 +233,10 @@ export async function run_build( argv ) {
 
 	for ( const edition of wanted ) {
 		const dir = s.editions[ edition ].dir;
-		const version = pluginVersion( dir );
-
-		if ( ! flags[ 'skip-assets' ] && ! ( await buildAssets( dir ) ) ) {
-			log.fail( `${ dir }: asset build failed` );
-			return 1;
-		}
-
-		log.step( `${ dir }: packaging ${ version }` );
-
-		if ( ! ( await packagePlugin( target, dir, version, ( t ) => process.stdout.write( t ) ) ) ) {
-			log.fail( `${ dir }: packaging failed` );
-			return 1;
-		}
+		const { version } = await buildPackage( dir, async ( script ) => {
+			const { code } = await compose( [ 'exec', '-T', target.service, 'bash', '-lc', script ] );
+			return code === 0;
+		}, { skipAssets: flags[ 'skip-assets' ] } );
 
 		if ( flags.verify && ! ( await verifyPackage( target, dir, version, ( t ) => process.stdout.write( t ) ) ) ) {
 			log.fail( `${ dir }: the built package failed verification` );

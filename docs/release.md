@@ -56,7 +56,8 @@ and attaches both zips to a GitHub release.
 Publishing to WordPress.org is a separate, manual workflow (`deploy-wporg.yml`, run from the
 Actions tab) because an SVN publish cannot be undone. It needs `SVN_USERNAME` and `SVN_PASSWORD` in
 the repository secrets, and takes directory assets - banner, icon, screenshots - from
-`.wordpress-org/`.
+`.wordpress-org/`. Enter the Git tag (`v1.2.0`) when dispatching it; the workflow removes the `v`
+because WordPress.org SVN release directories must contain only the numeric version (`1.2.0`).
 
 ## Checklist
 

@@ -7,6 +7,7 @@ import process from 'node:process';
 import { log, c, UserError } from '../cli/lib/log.mjs';
 
 const COMMANDS = {
+	playground: 'Start a persistent sandbox with packaged plugins (up, install, snapshot, reset).',
 	init: 'Turn the starter into your own plugin (rename slug, namespace, prefixes).',
 	doctor: 'Check that this machine is ready (Docker, ports, dependencies).',
 	compose: 'Regenerate env/docker-compose.gen.yml from wp-matrix.json.',
