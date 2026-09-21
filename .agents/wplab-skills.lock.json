@@ -3,12 +3,14 @@
 	"ref": "trunk",
 	"commit": "d87ee6916e740c7960b6959220c0481a41b320c7",
 	"committedAt": "2026-08-16T15:29:24-07:00",
-	"installedAt": "2026-09-13T06:47:17.205Z",
+	"installedAt": "2026-09-20T16:38:55.631Z",
 	"targets": [
+		"codex",
 		"claude"
 	],
 	"skills": [
 		"wordpress-router",
+		"wp-project-triage",
 		"wp-plugin-development",
 		"wp-plugin-directory-guidelines",
 		"wp-block-development",

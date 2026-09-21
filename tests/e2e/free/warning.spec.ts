@@ -337,6 +337,35 @@ test.describe( 'Warning an author before they lose content', () => {
 		} );
 	} );
 
+	test( 'details exits distraction-free mode before opening the panel', async ( {
+		admin,
+		editor,
+		page,
+	} ) => {
+		await startPost( admin, editor );
+		await writeRiskyContent( editor );
+
+		await expect( warningNotice( page ) ).toBeVisible( { timeout: SETTLE } );
+		await page.evaluate( () => {
+			( window as unknown as {
+				wp: { data: { dispatch: ( store: string ) => { toggleDistractionFree: () => void } } };
+			} ).wp.data.dispatch( 'core/editor' ).toggleDistractionFree();
+		} );
+
+		const editorInterface = page.locator( '.editor-editor-interface' );
+		await expect( editorInterface ).toHaveClass( /is-distraction-free/ );
+		await page.getByRole( 'button', { name: 'Details' } ).click();
+
+		await expect( editorInterface ).not.toHaveClass( /is-distraction-free/ );
+		await expect( panel( page ) ).toBeVisible( { timeout: SETTLE } );
+		const panelSection = page.locator( '.sobol-safe-save-panel' );
+		await expect( panelSection ).toHaveClass( /sobol-safe-save-panel--attention/ );
+		await expect( panelSection.locator( 'button[aria-expanded="true"]' ) ).toBeFocused();
+		await expect( panel( page ).getByText( /<iframe> element will be removed/ ) ).toBeVisible( {
+			timeout: SETTLE,
+		} );
+	} );
+
 	test( 'the post still saves after the warning', async ( { admin, editor, page } ) => {
 		await startPost( admin, editor, 'Saved despite the warning' );
 		await writeRiskyContent( editor );

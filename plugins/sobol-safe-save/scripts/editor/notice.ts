@@ -5,8 +5,10 @@ import { dispatch, select } from '@wordpress/data';
 import { store as editorStore } from '@wordpress/editor';
 import { __ } from '@wordpress/i18n';
 import { store as noticesStore } from '@wordpress/notices';
+import { store as preferencesStore } from '@wordpress/preferences';
 
 import { fingerprint, summarise } from '../shared/describe';
+import { focusSobolSafeSavePanel } from './focus-panel';
 import { blockTitle, goToBlock, isReachable } from './wp';
 import type { Report } from '../shared/types';
 
@@ -57,6 +59,13 @@ function reviewNextBlock( report: Report ): void {
 
 /** Opens the document sidebar with Sobol Safe Save expanded to its findings. */
 function openDetails(): void {
+	// The document sidebar is intentionally hidden in distraction-free mode. Leave that mode
+	// before opening the panel so the action remains useful instead of appearing to do nothing.
+	const preferences = select( preferencesStore ) as { get: ( scope: string, name: string ) => boolean };
+	if ( preferences.get( 'core', 'distractionFree' ) ) {
+		( dispatch( editorStore ) as { toggleDistractionFree: () => void } ).toggleDistractionFree();
+	}
+
 	( dispatch( 'core/edit-post' ) as { openGeneralSidebar: ( name: string ) => void } ).openGeneralSidebar(
 		'edit-post/document'
 	);
@@ -70,6 +79,8 @@ function openDetails(): void {
 			panel
 		);
 	}
+
+	focusSobolSafeSavePanel();
 }
 
 /**
