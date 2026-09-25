@@ -91,6 +91,11 @@ so a site's own administrator loses content exactly as an author does.
 Not yet. This version covers the block editor only. Classic editor support is written and works, but
 it is not shipped until it has the same end-to-end test coverage as everything else here.
 
+== Screenshots ==
+
+1. A warning names the content that WordPress will remove before the post is saved.
+2. Sobol Safe Save shows the affected block and the exact markup difference in the document sidebar.
+
 == Changelog ==
 
 = 0.1.0 =

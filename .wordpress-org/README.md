@@ -17,4 +17,4 @@ numbering maps to the readme list in order, so `screenshot-2.png` is the second 
 
 Localised variants append a locale before the extension: `banner-772x250-pl_PL.png`.
 
-See `.claude/skills/wp-org-release/` for the readme.txt format and the submission process.
+See `.agents/skills/wp-org-release/` for the readme.txt format and the submission process.
