@@ -48,7 +48,14 @@ happens on your own server, and nothing is stored.
 = For developers =
 
 Sobol Safe Save exposes documented PHP hooks and a JavaScript data store so that an add-on can build on
-it — an audit log, alerts, per-role policies. See EXTENDING.md in the plugin's repository.
+it — an audit log, alerts, per-role policies. See the [extension documentation](https://github.com/lsobolew/sobol-safe-save/blob/main/plugins/sobol-safe-save/EXTENDING.md).
+
+= Development source =
+
+The human-readable JavaScript/TypeScript source and build tools for the editor assets are available in
+the [public plugin source](https://github.com/lsobolew/sobol-safe-save/tree/main/plugins/sobol-safe-save).
+
+To rebuild the editor assets, install the dependencies in that directory and run `npm run build`.
 
 == Installation ==
 
