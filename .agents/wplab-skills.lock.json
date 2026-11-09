@@ -1,9 +1,9 @@
 {
 	"repo": "https://github.com/WordPress/agent-skills.git",
 	"ref": "trunk",
-	"commit": "d87ee6916e740c7960b6959220c0481a41b320c7",
-	"committedAt": "2026-08-16T15:29:24-07:00",
-	"installedAt": "2026-09-20T16:38:55.631Z",
+	"commit": "7374e6f1c913b3b02b25465d266d9c0e0a04fc96",
+	"committedAt": "2026-11-05T14:35:52-07:00",
+	"installedAt": "2026-11-09T14:27:03.955Z",
 	"targets": [
 		"codex",
 		"claude"
